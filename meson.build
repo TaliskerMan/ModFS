@@ -1,4 +1,4 @@
-project('fsearch', 'c',
+project('modfs', 'c',
     version: '0.3.alpha0',
     meson_version: '>= 0.45.0',
     default_options: ['c_std=gnu11',
@@ -23,7 +23,7 @@ config_h.set_quoted('GETTEXT_PACKAGE', 'fsearch')
 config_h.set_quoted('LOCALEDIR', join_paths(get_option('prefix'), get_option('localedir')))
 config_h.set_quoted('PACKAGE_WEBSITE', 'https://github.com/cboxdoerfer/fsearch')
 config_h.set_quoted('PACKAGE_ICON_NAME', app_id)
-config_h.set_quoted('PACKAGE_NAME', 'FSearch')
+config_h.set_quoted('PACKAGE_NAME', 'ModFS')
 config_h.set_quoted('BUILD_CHANNEL', get_option('channel'))
 
 # ensure off_t is 64bit

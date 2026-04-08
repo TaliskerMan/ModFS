@@ -91,3 +91,34 @@
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
+
+/* --- ModFS Custom Branding overrides --- */
+
+window headerbar {
+    background: #1a5c8c;
+    color: #ffffff;
+    border-bottom: 2px solid #003b60;
+}
+
+window headerbar .search_button {
+    background-color: #2b70a3;
+    color: #ffffff;
+    border-radius: 18px;
+}
+
+window headerbar entry.search_entry {
+    background-color: #f7f9fc;
+    color: #111111;
+    border: 1px solid #c9d6e2;
+    border-radius: 18px;
+    padding: 2px 10px;
+}
+
+.results_frame treeview {
+    background-color: #fcfdfe;
+}
+
+.results_frame treeview:selected {
+    background-color: #ccdef0;
+    color: #0d2a45;
+}

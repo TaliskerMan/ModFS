@@ -1,7 +1,11 @@
+# ModFS
+
 ![Build Status](https://github.com/cboxdoerfer/fsearch/actions/workflows/build_test.yml/badge.svg)
 [![Translation status](https://hosted.weblate.org/widgets/fsearch/-/svg-badge.svg)](https://hosted.weblate.org/engage/fsearch/?utm_source=widget)
 
-FSearch is a fast file search utility, inspired by Everything Search Engine. It's written in C and based on GTK3.
+**ModFS is a fork of [FSearch](https://github.com/cboxdoerfer/fsearch).**
+
+ModFS is a fast file search utility, inspired by Everything Search Engine. It's written in C and based on GTK3.
 
 * For bug reports and feature requests please use the issue tracker: <https://github.com/cboxdoerfer/fsearch/issues>
 * For discussions and questions about FSearch use the discussion
