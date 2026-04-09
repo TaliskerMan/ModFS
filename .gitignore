@@ -154,3 +154,12 @@ po/stamp-it
 /tools/print_version.sh
 /data/io.github.cboxdoerfer.FSearch.desktop
 /data/io.github.cboxdoerfer.FSearch.desktop.in
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/

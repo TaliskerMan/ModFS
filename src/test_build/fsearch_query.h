@@ -19,12 +19,13 @@
 #pragma once
 
 #include <glib.h>
-#include <gio/gio.h>
+#include <gtk/gtk.h>
 #include <pango/pango.h>
 #include <stdbool.h>
 
 #include "fsearch_array.h"
 #include "fsearch_filter_manager.h"
+#include "fsearch_list_view.h"
 #include "fsearch_query_flags.h"
 #include "fsearch_query_match_data.h"
 #include "fsearch_query_node.h"

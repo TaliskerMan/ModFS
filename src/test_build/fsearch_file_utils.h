@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gio/gio.h>
+#include <gtk/gtk.h>
 #include <stdbool.h>
 
 typedef void (*FsearchFileUtilsOpenCallback)(gboolean result, const char *error_message, gpointer user_data);

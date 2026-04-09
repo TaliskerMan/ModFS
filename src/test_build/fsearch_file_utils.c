@@ -21,7 +21,7 @@
 #include "fsearch_file_utils.h"
 #include "fsearch_limits.h"
 #include "fsearch_string_utils.h"
-
+#include "fsearch_ui_utils.h"
 
 #ifndef __MACH__
 #include <gio/gdesktopappinfo.h>

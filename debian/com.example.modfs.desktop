@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=ModFS
+Comment=Fast file search and indexing tool
+Exec=modfs %F
+Icon=com.example.modfs
+Terminal=false
+Type=Application
+Categories=Utility;System;Core;
+Keywords=Search;Files;Folders;Index;
+StartupNotify=true
