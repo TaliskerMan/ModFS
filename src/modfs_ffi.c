@@ -7,6 +7,7 @@
 #include <glib.h>
 #include <stdlib.h>
 #include "fsearch_index.h"
+#include "fsearch_exclude_path.h"
 
 void* modfs_db_new(const char** includes, int num_includes, const char** excludes, int num_excludes, bool exclude_hidden) {
     GList *g_includes = NULL;
@@ -19,10 +20,7 @@ void* modfs_db_new(const char** includes, int num_includes, const char** exclude
     }
     GList *g_excludes = NULL;
     for (int i = 0; i < num_excludes; i++) {
-        GDateTime* dt = g_date_time_new_now_local();
-        time_t t = g_date_time_to_unix(dt);
-        g_date_time_unref(dt);
-        FsearchIndex* idx = fsearch_index_new(FSEARCH_INDEX_FOLDER_TYPE, excludes[i], true, true, false, t);
+        FsearchExcludePath* idx = fsearch_exclude_path_new(excludes[i], true);
         g_excludes = g_list_append(g_excludes, idx);
     }
     

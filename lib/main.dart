@@ -8,11 +8,44 @@ import 'dart:ui' as ui;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'ffi.dart';
+import 'version.dart';
+import 'logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppLogger.init();
+  AppLogger.log("Application started");
   final prefs = await SharedPreferences.getInstance();
   runApp(ModFSApp(prefs: prefs));
+}
+
+String getLibraryPath() {
+  final libraryName = Platform.isMacOS ? 'libmodfs_core.dylib' : 'libmodfs_core.so';
+  
+  if (Platform.isMacOS) {
+    final executable = Platform.resolvedExecutable;
+    if (executable.contains('.app/Contents/MacOS/')) {
+        final frameworksDir = File(executable).parent.parent.path + '/Frameworks';
+        final bundledLib = frameworksDir + '/' + libraryName;
+        if (File(bundledLib).existsSync()) {
+            return bundledLib;
+        }
+    }
+  }
+
+  final pathsToCheck = [
+    'src/$libraryName', // Local development
+    '/Users/charlestalk/AntiGravity/ModFS/src/$libraryName', // Hardcoded absolute workspace fallback
+  ];
+
+  for (final path in pathsToCheck) {
+    if (File(path).existsSync()) {
+      return File(path).absolute.path;
+    }
+  }
+  
+  // Allow loading from current working directory or absolute locations if bundled
+  return libraryName;
 }
 
 class AppState {
@@ -110,6 +143,19 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
+Future<void> Function() _buildIsolateTask(String libPath, int dbAddr, String dbPath, bool forceScan) {
+  return () async {
+    final isolateModfs = ModFSBindings(libPath);
+    final ptr = Pointer<Void>.fromAddress(dbAddr);
+    if (forceScan) {
+      isolateModfs.scanDatabase(ptr);
+      isolateModfs.saveDatabase(ptr, dbPath);
+    } else {
+      isolateModfs.loadDatabase(ptr, dbPath);
+    }
+  };
+}
+
 class _SearchScreenState extends State<SearchScreen> {
   late ModFSBindings modfs;
   Pointer<Void>? dbPtr;
@@ -146,7 +192,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final defaultHome = Platform.environment['HOME'] ?? '/';
       _includes = prefs.getStringList('include_paths') ?? [defaultHome];
       
-      List<String> defaultExcs = ['/proc', '/sys', '/dev', '/run', '/var/run', '/tmp', '/var/tmp', '\$defaultHome/.gvfs', '\$defaultHome/.cache', '/var/lib/docker'];
+      List<String> defaultExcs = ['/proc', '/sys', '/dev', '/run', '/var/run', '/tmp', '/var/tmp', '$defaultHome/.gvfs', '$defaultHome/.cache', '/var/lib/docker'];
       List<String> savedExcs = prefs.getStringList('exclude_paths') ?? [];
       if (savedExcs.isNotEmpty) {
         bool changed = false;
@@ -162,12 +208,12 @@ class _SearchScreenState extends State<SearchScreen> {
       
       final appDir = await getApplicationSupportDirectory();
       if (!appDir.existsSync()) appDir.createSync(recursive: true);
-      _dbPath = '\${appDir.path}/database.fsearch';
+      _dbPath = '${appDir.path}/database.fsearch';
 
-      modfs = ModFSBindings('/home/freecode/antigrav/ModFS/src/libmodfs_core.so');
+      modfs = ModFSBindings(getLibraryPath());
       _loadOrScanDB();
     } catch (e) {
-      debugPrint("ModFS Init Error: \$e");
+      AppLogger.log("ModFS Init Error: $e");
     }
   }
 
@@ -184,24 +230,16 @@ class _SearchScreenState extends State<SearchScreen> {
       dbPtr = modfs.createDatabase(_includes, _excludes, false);
       final dbAddr = dbPtr!.address;
       final dbPathLocal = _dbPath;
+      final libPathLocal = getLibraryPath();
       if (forceScan) {
-         await Isolate.run(() {
-           final isolateModfs = ModFSBindings('/home/freecode/antigrav/ModFS/src/libmodfs_core.so');
-           final ptr = Pointer<Void>.fromAddress(dbAddr);
-           isolateModfs.scanDatabase(ptr);
-           isolateModfs.saveDatabase(ptr, dbPathLocal);
-         });
+         await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, true));
       } else {
          if (File(_dbPath).existsSync()) {
-            await Isolate.run(() {
-              final isolateModfs = ModFSBindings('/home/freecode/antigrav/ModFS/src/libmodfs_core.so');
-              final ptr = Pointer<Void>.fromAddress(dbAddr);
-              isolateModfs.loadDatabase(ptr, dbPathLocal);
-            });
+            await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, false));
          }
       }
     } catch (e) {
-      debugPrint("Native Error: \$e");
+      AppLogger.log("Native Error: $e");
     }
     
     if (mounted) {
@@ -254,7 +292,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   void _openPath(String path) {
     Process.run('xdg-open', [path]).catchError((e) {
-      debugPrint("Could not open \$path: \$e");
+      debugPrint("Could not open $path: $e");
       return ProcessResult(0, 1, '', 'Failed to launch');
     });
   }
@@ -279,7 +317,7 @@ class _SearchScreenState extends State<SearchScreen> {
           _rebuildDatabase();
         },
       )),
-    );
+    ).then((_) => setState(() {}));
   }
 
   @override
@@ -300,7 +338,7 @@ class _SearchScreenState extends State<SearchScreen> {
       size /= 1024;
       idx++;
     }
-    return '\${size.toStringAsFixed(1)} \${suffix[idx]}';
+    return '${size.toStringAsFixed(1)} ${suffix[idx]}';
   }
 
   @override
@@ -330,9 +368,22 @@ class _SearchScreenState extends State<SearchScreen> {
                 _buildHeader(isDark),
                 _buildSearchBar(isDark),
                 if (_isScanning)
-                   const Padding(
-                     padding: EdgeInsets.all(16.0),
-                     child: Text("Indexing / Loading Database...", style: TextStyle(color: Colors.grey)),
+                   Padding(
+                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                     child: Row(
+                       mainAxisAlignment: MainAxisAlignment.center,
+                       children: [
+                         const SizedBox(
+                           height: 14, width: 14, 
+                           child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF635BFF))
+                         ),
+                         const SizedBox(width: 10),
+                         Text(
+                           "Indexing Database... This might take a moment", 
+                           style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)
+                         ),
+                       ],
+                     ),
                    )
                 else
                    Padding(
@@ -739,6 +790,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("About ModFS", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text("Version: $appVersion", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
           const SizedBox(height: 16),
           Text("ModFS is a modern, high-performance Flutter rebuild of FSearch, the fast file search utility.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
           const SizedBox(height: 24),

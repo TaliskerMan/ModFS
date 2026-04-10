@@ -28,7 +28,12 @@
 #include <glib/gi18n.h>
 
 #ifdef HAVE_MALLOC_TRIM
+#ifdef __APPLE__
+#include <stdlib.h>
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 #endif
 
 #include <inttypes.h>
@@ -1440,7 +1445,7 @@ db_free(FsearchDatabase *db) {
 
     g_clear_pointer(&db, free);
 
-#ifdef HAVE_MALLOC_TRIM
+#if defined(HAVE_MALLOC_TRIM) && HAVE_MALLOC_TRIM && !defined(__APPLE__)
     malloc_trim(0);
 #endif
 

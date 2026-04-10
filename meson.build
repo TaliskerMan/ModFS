@@ -33,10 +33,10 @@ fsearch_include_dirs = include_directories(
   '.',
 )
 
-subdir('data')
-subdir('help')
+# subdir('data')
+# subdir('help')
 subdir('src')
-subdir('po')
+# subdir('po')
 
 configure_file(
     output: 'config.h',

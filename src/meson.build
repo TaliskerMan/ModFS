@@ -1,37 +1,20 @@
-resources = gnome.compile_resources('ui_resources',
-    'gresource.xml',
-    source_dir: '.',
-    c_name: 'fsearch_ui',
-)
 
-resources += gnome.compile_resources('icon_resources',
-    join_paths(meson.source_root(), 'data', 'gresource.xml'),
-    source_dir: join_paths(meson.source_root(), 'data'),
-    c_name: 'fsearch_icons',
-)
 
 libfsearch_sources = [
-    resources,
-    'fsearch.c',
+
     'fsearch_array.c',
-    'fsearch_clipboard.c',
     'fsearch_config.c',
     'fsearch_database.c',
     'fsearch_database_entry.c',
     'fsearch_database_index.c',
     'fsearch_database_search.c',
-    'fsearch_database_view.c',
+
     'fsearch_exclude_path.c',
     'fsearch_file_utils.c',
     'fsearch_filter.c',
-    'fsearch_filter_editor.c',
     'fsearch_filter_manager.c',
     'fsearch_index.c',
-    'fsearch_list_view.c',
-    'fsearch_listview_popup.c',
     'fsearch_memory_pool.c',
-    'fsearch_preferences_ui.c',
-    'fsearch_preferences_widgets.c',
     'fsearch_query.c',
     'fsearch_query_match_data.c',
     'fsearch_query_matchers.c',
@@ -39,19 +22,12 @@ libfsearch_sources = [
     'fsearch_query_lexer.c',
     'fsearch_query_parser.c',
     'fsearch_query_tree.c',
-    'fsearch_result_view.c',
-    'fsearch_selection.c',
     'fsearch_size_utils.c',
-    'fsearch_statusbar.c',
     'fsearch_string_utils.c',
     'fsearch_task.c',
     'fsearch_thread_pool.c',
     'fsearch_time_utils.c',
-    'fsearch_ui_utils.c',
     'fsearch_utf.c',
-    'fsearch_window.c',
-    'fsearch_window_actions.c',
-    'fsearch_preview.c',
 ]
 
 if build_machine.system()=='darwin'
@@ -81,13 +57,14 @@ libfsearch_dep = declare_dependency(
         fsearch_include_dirs,
         libfsearch_include_dirs
     ],
-    dependencies: fsearch_deps,
-    sources: resources
+    dependencies: fsearch_deps
 )
 
-fsearch = executable('fsearch', 'main.c',
+libmodfs_core = shared_library('modfs_core',
+    'modfs_ffi.c',
     include_directories: fsearch_include_dirs,
-    dependencies: libfsearch_dep,
+    dependencies: fsearch_deps,
+    link_with: libfsearch,
     install: true,
 )
 
