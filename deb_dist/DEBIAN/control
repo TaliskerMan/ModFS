@@ -1,0 +1,8 @@
+Package: modfs
+Version: 1.0.0-9
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Chuck Talk <charlestalk@nordheim.online>
+Description: A modern, high-performance Flutter rebuild of FSearch.
+ Features native C backend FFI for instant results and isolate background tasks.
