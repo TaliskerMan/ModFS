@@ -685,7 +685,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               value: appState.themeMode,
               dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
               onChanged: (ThemeMode? val) {
-                if (val != null) appState.updateTheme(val);
+                if (val != null) {
+                  appState.updateTheme(val);
+                  setState(() {});
+                }
               },
               items: const [
                 DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
@@ -701,7 +704,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             value: appState.fontSize,
             dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
             onChanged: (double? val) {
-              if (val != null) appState.updateFontSize(val);
+              if (val != null) {
+                appState.updateFontSize(val);
+                setState(() {});
+              }
             },
             items: List.generate(11, (index) {
               double val = 8.0 + index;

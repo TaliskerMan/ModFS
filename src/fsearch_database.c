@@ -1000,17 +1000,10 @@ db_save(FsearchDatabase *db, const char *path) {
 
     g_debug("[db_save] saving database to file...");
 
-    if (!g_file_test(path, G_FILE_TEST_IS_DIR)) {
-        g_debug("[db_save] database path doesn't exist: %s", path);
-        return false;
-    }
-
     g_autoptr(GTimer) timer = g_timer_new();
     g_timer_start(timer);
 
     g_autoptr(GString) path_full = g_string_new(path);
-    g_string_append_c(path_full, G_DIR_SEPARATOR);
-    g_string_append(path_full, "fsearch.db");
 
     g_autoptr(GString) path_full_temp = g_string_new(path_full->str);
     g_string_append(path_full_temp, ".tmp");
