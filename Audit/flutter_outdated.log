@@ -1,0 +1,20 @@
+Showing outdated packages.
+[*] indicates versions that are not the latest available.
+
+Package Name  Current  Upgradable  Resolvable  Latest  
+
+direct dependencies: all up-to-date.
+
+dev_dependencies: all up-to-date.
+
+transitive dependencies:
+meta          *1.17.0  *1.17.0     *1.17.0     1.18.2  
+vector_math   *2.2.0   *2.2.0      *2.2.0      2.3.0   
+
+transitive dev_dependencies:
+test_api      *0.7.10  *0.7.10     *0.7.10     0.7.11  
+vm_service    *15.0.2  15.1.0      15.1.0      15.1.0  
+
+1 upgradable dependency is locked (in pubspec.lock) to an older version.
+To update it, use `flutter pub upgrade`.
+all dependencies are up-to-date.

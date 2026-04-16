@@ -8,17 +8,17 @@ DEB_VERSION=$(echo "$VERSION" | sed 's/+/-/g')
 APP_NAME="modfs"
 
 echo "==> 1. Compiling C Backend via Meson (Linux Native) ..."
-if [ ! -d "build" ]; then
-    meson setup build
-else
-    meson configure build
-fi
-meson compile -C build
+# if [ ! -d "build" ]; then
+#     meson setup build
+# else
+#     meson configure build
+# fi
+# meson compile -C build
 # Move the compiled shared library to the workspace root for local flutter run tests
-cp build/src/libmodfs_core.so src/libmodfs_core.so
+# cp build/src/libmodfs_core.so src/libmodfs_core.so
 
 echo "==> 2. Building Flutter Linux Release ..."
-FLUTTER_BIN="/home/freecode/.local/flutter/bin/flutter"
+FLUTTER_BIN="/home/freecode/flutter/bin/flutter"
 $FLUTTER_BIN clean
 $FLUTTER_BIN pub get
 $FLUTTER_BIN build linux --release
@@ -44,6 +44,12 @@ ln -s "/opt/$APP_NAME/$APP_NAME" "$DEB_DIR/usr/bin/$APP_NAME"
 cp debian/com.example.modfs.desktop "$DEB_DIR/usr/share/applications/$APP_NAME.desktop"
 cp assets/modfs.png "$DEB_DIR/usr/share/icons/hicolor/512x512/apps/$APP_NAME.png"
 
+echo "==> 4.5 Generating SBOM (Software Bill of Materials) ..."
+mkdir -p Audit
+$FLUTTER_BIN pub deps > Audit/SBOM_ModFS_Linux.txt
+echo -e "\n=== C Backend Library Dependencies ===" >> Audit/SBOM_ModFS_Linux.txt
+ldd src/libmodfs_core.so >> Audit/SBOM_ModFS_Linux.txt || true
+
 echo "==> 5. Creating DEBIAN Control File ..."
 cat <<EOF > "$DEB_DIR/DEBIAN/control"
 Package: $APP_NAME
@@ -57,6 +63,15 @@ Description: A modern, high-performance Flutter rebuild of FSearch.
 EOF
 
 echo "==> 6. Constructing ModFS DEB Package ..."
-dpkg-deb --build "$DEB_DIR" "ModFS_linux_${DEB_VERSION}_amd64.deb"
+mkdir -p linbld
+dpkg-deb --build "$DEB_DIR" "linbld/ModFS_linux_${DEB_VERSION}_amd64.deb"
 
-echo "==> Done! Output: ModFS_linux_${DEB_VERSION}_amd64.deb"
+echo "==> 7. Cryptographically Signing Payload (Rule 006) ..."
+gpg --detach-sign --armor --local-user chuck@nordheim.online --yes "linbld/ModFS_linux_${DEB_VERSION}_amd64.deb"
+
+echo "==> 8. Generating SHA-512 Hashes ..."
+cd linbld
+sha512sum "ModFS_linux_${DEB_VERSION}_amd64.deb" > SHA512SUMS
+cd ..
+
+echo "==> Done! Artifacts output to linbld/"
