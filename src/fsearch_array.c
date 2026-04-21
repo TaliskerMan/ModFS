@@ -220,13 +220,19 @@ darray_expand(DynamicArray *array, size_t min) {
     g_assert(array->data);
 
     const size_t old_max_items = array->max_items;
+    if (min < old_max_items) {
+        g_error("[darray_expand] Integer overflow detected for minimum expansion.");
+    }
     const size_t expand_rate = MAX(array->max_items / 2, min - old_max_items);
+    if (array->max_items + expand_rate < array->max_items || array->max_items + expand_rate > G_MAXUINT32) {
+        g_error("[darray_expand] Integer overflow in max_items.");
+    }
     array->max_items += expand_rate;
 
     void *new_data = realloc(array->data, array->max_items * sizeof(void *));
     g_assert(new_data);
     array->data = new_data;
-    memset(array->data + old_max_items, 0, expand_rate + 1);
+    memset(array->data + old_max_items, 0, (array->max_items - old_max_items) * sizeof(void *));
 }
 
 void
@@ -235,11 +241,14 @@ darray_add_items(DynamicArray *array, void **items, uint32_t num_items) {
     g_assert(array->data);
     g_assert(items);
 
-    if (array->num_items + num_items > array->max_items) {
-        darray_expand(array, array->num_items + num_items);
+    if (array->max_items - array->num_items < num_items) {
+        if (G_MAXUINT32 - array->num_items < num_items) {
+            g_error("[darray_add_items] Integer overflow detected.");
+        }
+        darray_expand(array, (size_t)array->num_items + num_items);
     }
 
-    memcpy(array->data + array->num_items, items, num_items * sizeof(void *));
+    memcpy(array->data + array->num_items, items, (size_t)num_items * sizeof(void *));
     array->num_items += num_items;
 }
 
@@ -250,7 +259,10 @@ darray_add_item(DynamicArray *array, void *data) {
     // g_assert(data );
 
     if (array->num_items >= array->max_items) {
-        darray_expand(array, array->num_items + 1);
+        if (array->num_items == G_MAXUINT32) {
+            g_error("[darray_add_item] Integer overflow detected.");
+        }
+        darray_expand(array, (size_t)array->num_items + 1);
     }
 
     array->data[array->num_items++] = data;

@@ -250,27 +250,38 @@ db_file_open_locked(const char *file_path, const char *mode) {
     int file_descriptor = fileno(file_pointer);
     if (flock(file_descriptor, LOCK_EX | LOCK_NB) == -1) {
         g_debug("[db_file] database file is already locked by a different process: %s", file_path);
-
-        g_clear_pointer(&file_pointer, fclose);
+        fclose(file_pointer);
+        return NULL;
     }
 
     return file_pointer;
 }
 
-static const uint8_t *
-copy_bytes_and_return_new_src(void *dest, const uint8_t *src, size_t len) {
-    memcpy(dest, src, len);
-    return src + len;
-}
+#define DB_READ_MEM(dest, dest_size, src, len, end) \
+    do { \
+        if ((src) == NULL || (size_t)(len) > (size_t)((end) - (src)) || (size_t)(len) > (size_t)(dest_size)) { \
+            (src) = NULL; \
+        } else { \
+            memcpy((dest), (src), (len)); \
+            (src) += (len); \
+        } \
+    } while (0)
 
 static const uint8_t *
 db_load_entry_super_elements_from_memory(const uint8_t *data_block,
                                          FsearchDatabaseIndexFlags index_flags,
                                          FsearchDatabaseEntry *entry,
-                                         GString *previous_entry_name) {
+                                         GString *previous_entry_name,
+                                         const uint8_t *end) {
+    if (data_block == NULL || data_block >= end) {
+        return NULL;
+    }
     // name_offset: character position after which previous_entry_name and entry_name differ
     uint8_t name_offset = *data_block++;
 
+    if (data_block >= end) {
+        return NULL;
+    }
     // name_len: length of the new name characters
     uint8_t name_len = *data_block++;
 
@@ -280,7 +291,10 @@ db_load_entry_super_elements_from_memory(const uint8_t *data_block,
     char name[256] = "";
     // name: new characters to be appended to previous_entry_name
     if (name_len > 0) {
-        data_block = copy_bytes_and_return_new_src(name, data_block, name_len);
+        DB_READ_MEM(name, sizeof(name) - 1, data_block, name_len, end);
+        if (!data_block) {
+            return NULL;
+        }
         name[name_len] = '\0';
     }
 
@@ -291,7 +305,10 @@ db_load_entry_super_elements_from_memory(const uint8_t *data_block,
     if ((index_flags & DATABASE_INDEX_FLAG_SIZE) != 0) {
         // size: size of file/folder
         int64_t size = 0;
-        data_block = copy_bytes_and_return_new_src(&size, data_block, 8);
+        DB_READ_MEM(&size, sizeof(size), data_block, 8, end);
+        if (!data_block) {
+            return NULL;
+        }
 
         db_entry_set_size(entry, (off_t)size);
     }
@@ -299,7 +316,10 @@ db_load_entry_super_elements_from_memory(const uint8_t *data_block,
     if ((index_flags & DATABASE_INDEX_FLAG_MODIFICATION_TIME) != 0) {
         // mtime: modification time file/folder
         int64_t mtime = 0;
-        data_block = copy_bytes_and_return_new_src(&mtime, data_block, 8);
+        DB_READ_MEM(&mtime, sizeof(mtime), data_block, 8, end);
+        if (!data_block) {
+            return NULL;
+        }
 
         db_entry_set_mtime(entry, (time_t)mtime);
     }
@@ -417,6 +437,7 @@ db_load_folders(FILE *fp,
     }
 
     const uint8_t *fb = folder_block;
+    const uint8_t *end = folder_block + folder_block_size;
     // load folders
     uint32_t idx = 0;
     for (idx = 0; idx < num_folders; idx++) {
@@ -426,13 +447,16 @@ db_load_folders(FILE *fp,
         // TODO: db_index is currently unused
         // db_index: the database index this folder belongs to
         uint16_t db_index = 0;
-        fb = copy_bytes_and_return_new_src(&db_index, fb, 2);
+        DB_READ_MEM(&db_index, sizeof(db_index), fb, 2, end);
+        if (!fb) return false;
 
-        fb = db_load_entry_super_elements_from_memory(fb, index_flags, entry, previous_entry_name);
+        fb = db_load_entry_super_elements_from_memory(fb, index_flags, entry, previous_entry_name, end);
+        if (!fb) return false;
 
         // parent_idx: index of parent folder
         uint32_t parent_idx = 0;
-        fb = copy_bytes_and_return_new_src(&parent_idx, fb, 4);
+        DB_READ_MEM(&parent_idx, sizeof(parent_idx), fb, 4, end);
+        if (!fb) return false;
 
         if (parent_idx != db_entry_get_idx(entry)) {
             FsearchDatabaseEntryFolder *parent = darray_get_item(folders, parent_idx);
@@ -477,6 +501,7 @@ db_load_files(FILE *fp,
     }
 
     const uint8_t *fb = file_block;
+    const uint8_t *end = file_block + file_block_size;
     // load folders
     uint32_t idx = 0;
     for (idx = 0; idx < num_files; idx++) {
@@ -484,11 +509,13 @@ db_load_files(FILE *fp,
         db_entry_set_type(entry, DATABASE_ENTRY_TYPE_FILE);
         db_entry_set_idx(entry, idx);
 
-        fb = db_load_entry_super_elements_from_memory(fb, index_flags, entry, previous_entry_name);
+        fb = db_load_entry_super_elements_from_memory(fb, index_flags, entry, previous_entry_name, end);
+        if (!fb) return false;
 
         // parent_idx: index of parent folder
         uint32_t parent_idx = 0;
-        fb = copy_bytes_and_return_new_src(&parent_idx, fb, 4);
+        DB_READ_MEM(&parent_idx, sizeof(parent_idx), fb, 4, end);
+        if (!fb) return false;
 
         FsearchDatabaseEntryFolder *parent = darray_get_item(folders, parent_idx);
         db_entry_set_parent(entry, parent);
