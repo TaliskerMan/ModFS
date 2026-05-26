@@ -1,6 +1,5 @@
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
-import 'dart:io';
 
 typedef ModfsDbNewCNode = Pointer<Void> Function(Pointer<Pointer<Utf8>>, Int32, Pointer<Pointer<Utf8>>, Int32, Bool);
 typedef ModfsDbNewDart = Pointer<Void> Function(Pointer<Pointer<Utf8>>, int, Pointer<Pointer<Utf8>>, int, bool);

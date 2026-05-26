@@ -1,5 +1,4 @@
-import 'dart:ffi';
-import 'package:ffi/ffi.dart';
+// ignore_for_file: avoid_print
 import 'lib/ffi.dart';
 
 void main() async {
