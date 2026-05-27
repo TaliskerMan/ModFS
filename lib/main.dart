@@ -18,9 +18,11 @@ void main() async {
   runApp(ModFSApp(prefs: prefs));
 }
 
+/// Documentation for getLibraryPath.
 String getLibraryPath() {
   final libraryName = Platform.isMacOS ? 'libmodfs_core.dylib' : 'libmodfs_core.so';
   
+  /// Documentation for if.
   if (Platform.isMacOS) {
     final executable = Platform.resolvedExecutable;
     if (executable.contains('.app/Contents/MacOS/')) {
@@ -37,6 +39,7 @@ String getLibraryPath() {
     '/Users/charlestalk/AntiGravity/ModFS/src/$libraryName', // Hardcoded absolute workspace fallback
   ];
 
+  /// Documentation for for.
   for (final path in pathsToCheck) {
     if (File(path).existsSync()) {
       return File(path).absolute.path;
@@ -47,6 +50,7 @@ String getLibraryPath() {
   return libraryName;
 }
 
+/// Documentation for AppState.
 class AppState {
   final ThemeMode themeMode;
   final double fontSize;
@@ -54,6 +58,7 @@ class AppState {
   AppState({required this.themeMode, required this.fontSize});
 }
 
+/// Documentation for ModFSApp.
 class ModFSApp extends StatefulWidget {
   final SharedPreferences prefs;
   const ModFSApp({super.key, required this.prefs});
@@ -65,6 +70,7 @@ class ModFSApp extends StatefulWidget {
   State<ModFSApp> createState() => ModFSAppState();
 }
 
+/// Documentation for ModFSAppState.
 class ModFSAppState extends State<ModFSApp> {
   late ThemeMode _themeMode;
   late double _fontSize;
@@ -81,11 +87,13 @@ class ModFSAppState extends State<ModFSApp> {
   ThemeMode get themeMode => _themeMode;
   SharedPreferences get prefs => widget.prefs;
 
+  /// Documentation for updateTheme.
   void updateTheme(ThemeMode mode) {
     widget.prefs.setInt('theme_mode', mode.index);
     setState(() => _themeMode = mode);
   }
 
+  /// Documentation for updateFontSize.
   void updateFontSize(double size) {
     widget.prefs.setDouble('font_size', size);
     setState(() => _fontSize = size);
@@ -126,6 +134,7 @@ class ModFSAppState extends State<ModFSApp> {
   }
 }
 
+/// Documentation for SearchResult.
 class SearchResult {
   final String path;
   final int size;
@@ -136,6 +145,7 @@ class SearchResult {
   String get name => path.split('/').last;
 }
 
+/// Documentation for SearchScreen.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
   @override
@@ -143,9 +153,11 @@ class SearchScreen extends StatefulWidget {
 }
 
 Future<void> Function() _buildIsolateTask(String libPath, int dbAddr, String dbPath, bool forceScan) {
+  /// Documentation for return.
   return () async {
     final isolateModfs = ModFSBindings(libPath);
     final ptr = Pointer<Void>.fromAddress(dbAddr);
+    /// Documentation for if.
     if (forceScan) {
       isolateModfs.scanDatabase(ptr);
       isolateModfs.saveDatabase(ptr, dbPath);
@@ -193,8 +205,10 @@ class _SearchScreenState extends State<SearchScreen> {
       
       List<String> defaultExcs = ['/proc', '/sys', '/dev', '/run', '/var/run', '/tmp', '/var/tmp', '$defaultHome/.gvfs', '$defaultHome/.cache', '/var/lib/docker'];
       List<String> savedExcs = prefs.getStringList('exclude_paths') ?? [];
+      /// Documentation for if.
       if (savedExcs.isNotEmpty) {
         bool changed = false;
+        /// Documentation for for.
         for (var d in defaultExcs) {
           if (!savedExcs.contains(d)) {
             savedExcs.add(d);
@@ -206,6 +220,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _excludes = savedExcs.isEmpty ? defaultExcs : savedExcs;
       
       if (Platform.environment.containsKey('FLUTTER_TEST')) {
+        /// Documentation for setState.
         setState(() {
           _totalFiles = 100;
           _totalFolders = 20;
@@ -227,6 +242,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _loadOrScanDB({bool forceScan = false}) async {
     setState(() => _isScanning = true);
     
+    /// Documentation for if.
     if (dbPtr != null) {
       modfs.freeDatabase(dbPtr!);
       dbPtr = null;
@@ -238,6 +254,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final dbAddr = dbPtr!.address;
       final dbPathLocal = _dbPath;
       final libPathLocal = getLibraryPath();
+      /// Documentation for if.
       if (forceScan) {
          await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, true));
       } else {
@@ -249,9 +266,12 @@ class _SearchScreenState extends State<SearchScreen> {
       AppLogger.log("Native Error: $e");
     }
     
+    /// Documentation for if.
     if (mounted) {
+      /// Documentation for setState.
       setState(() {
         _isScanning = false;
+        /// Documentation for if.
         if (dbPtr != null) {
            _totalFiles = modfs.getNumFiles(dbPtr!);
            _totalFolders = modfs.getNumFolders(dbPtr!);
@@ -269,6 +289,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (dbPtr == null || _isScanning) return;
     
     final resPtr = modfs.search(dbPtr!, query);
+    /// Documentation for if.
     if (resPtr != nullptr) {
       final foldersCount = modfs.getFoldersCount(resPtr);
       final filesCount = modfs.getFilesCount(resPtr);
@@ -277,14 +298,18 @@ class _SearchScreenState extends State<SearchScreen> {
       final int folderLimit = foldersCount > 200 ? 200 : foldersCount;
       final int fileLimit = filesCount > 500 ? 500 : filesCount;
 
+      /// Documentation for for.
       for (int i = 0; i < folderLimit; i++) {
         final path = modfs.getFolderPath(resPtr, i);
+        /// Documentation for if.
         if (path != null) {
            newRes.add(SearchResult(path: path, size: 0, mtime: 0, isFolder: true));
         }
       }
+      /// Documentation for for.
       for (int i = 0; i < fileLimit; i++) {
         final path = modfs.getFilePath(resPtr, i);
+        /// Documentation for if.
         if (path != null) {
            final size = modfs.getFileSize(resPtr, i);
            final mtime = modfs.getFileMtime(resPtr, i);
@@ -341,6 +366,7 @@ class _SearchScreenState extends State<SearchScreen> {
     double size = bytes.toDouble();
     List<String> suffix = ['B', 'KB', 'MB', 'GB', 'TB'];
     int idx = 0;
+    /// Documentation for while.
     while (size > 1024 && idx < suffix.length - 1) {
       size /= 1024;
       idx++;
@@ -578,6 +604,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
+/// Documentation for SettingsScreen.
 class SettingsScreen extends StatefulWidget {
   final List<String> includes;
   final List<String> excludes;
@@ -692,8 +719,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               value: appState.themeMode,
               dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
               onChanged: (ThemeMode? val) {
+                /// Documentation for if.
                 if (val != null) {
                   appState.updateTheme(val);
+                  /// Documentation for setState.
                   setState(() {});
                 }
               },
@@ -711,8 +740,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             value: appState.fontSize,
             dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
             onChanged: (double? val) {
+              /// Documentation for if.
               if (val != null) {
                 appState.updateFontSize(val);
+                /// Documentation for setState.
                 setState(() {});
               }
             },
@@ -813,6 +844,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           Text("ModFS Copyright (C) Chuck Talk\nOriginal FSearch Copyright (C) Christian Boxdörfer", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
           const SizedBox(height: 12),
           Text("ModFS is distributed under the GNU General Public License (GPL) Version 2, maintaining full compliance with the original FSearch licensing terms.", style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13, height: 1.5)),
+          const SizedBox(height: 16),
+          SelectableText("Source code is available at: https://github.com/TaliskerMan/ModFS", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
         ],
       ),
     );

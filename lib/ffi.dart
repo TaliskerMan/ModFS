@@ -34,6 +34,7 @@ typedef ModfsSearchResultGetInfoDart = int Function(Pointer<Void>, int);
 typedef ModfsFreeStringCNode = Void Function(Pointer<Utf8>);
 typedef ModfsFreeStringDart = void Function(Pointer<Utf8>);
 
+/// Documentation for ModFSBindings.
 class ModFSBindings {
   late final DynamicLibrary _lib;
 
@@ -57,6 +58,7 @@ class ModFSBindings {
   late final ModfsDbFreeDart _freeSearchResult;
   late final ModfsFreeStringDart _freeString;
 
+  /// Documentation for ModFSBindings.
   ModFSBindings(String libraryPath) {
     _lib = DynamicLibrary.open(libraryPath);
     
@@ -81,6 +83,7 @@ class ModFSBindings {
     _freeString = _lib.lookupFunction<ModfsFreeStringCNode, ModfsFreeStringDart>('modfs_free_string');
   }
 
+  /// Documentation for createDatabase.
   Pointer<Void> createDatabase(List<String> includes, List<String> excludes, bool excludeHidden) {
     final incArgs = _allocateStringArray(includes);
     final excArgs = _allocateStringArray(excludes);
@@ -93,16 +96,19 @@ class ModFSBindings {
   Pointer<Pointer<Utf8>> _allocateStringArray(List<String> strings) {
     if (strings.isEmpty) return nullptr;
     final Pointer<Pointer<Utf8>> arr = malloc.allocate(strings.length * sizeOf<Pointer<Utf8>>());
+    /// Documentation for for.
     for (int i = 0; i < strings.length; i++) {
         arr[i] = strings[i].toNativeUtf8();
     }
     return arr;
   }
 
+  /// Documentation for scanDatabase.
   bool scanDatabase(Pointer<Void> db) {
     return _dbScan(db);
   }
 
+  /// Documentation for saveDatabase.
   bool saveDatabase(Pointer<Void> db, String path) {
     var pathUtf8 = path.toNativeUtf8();
     var res = _dbSave(db, pathUtf8);
@@ -110,6 +116,7 @@ class ModFSBindings {
     return res;
   }
 
+  /// Documentation for loadDatabase.
   bool loadDatabase(Pointer<Void> db, String path) {
     var pathUtf8 = path.toNativeUtf8();
     var res = _dbLoad(db, pathUtf8);
@@ -120,6 +127,7 @@ class ModFSBindings {
   int getNumFiles(Pointer<Void> db) => _dbGetNumFiles(db);
   int getNumFolders(Pointer<Void> db) => _dbGetNumFolders(db);
 
+  /// Documentation for search.
   Pointer<Void> search(Pointer<Void> db, String query) {
     var queryUtf8 = query.toNativeUtf8();
     var res = _dbSearch(db, queryUtf8);

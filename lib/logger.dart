@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// Documentation for AppLogger.
 class AppLogger {
   static File? _logFile;
 
+  /// Documentation for init.
   static Future<void> init() async {
     try {
       final dir = await getApplicationSupportDirectory();
@@ -13,8 +15,10 @@ class AppLogger {
     } catch (_) {}
   }
 
+  /// Documentation for log.
   static void log(String message) {
     debugPrint(message);
+    /// Documentation for if.
     if (_logFile != null) {
       final timestamp = DateTime.now().toIso8601String();
       try {
