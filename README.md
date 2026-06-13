@@ -14,21 +14,11 @@ ModFS is deeply rooted in the C codebase written by **Christian Boxdörfer** (`c
 The modernization layer (Flutter UI, background Dart isolate workers, macOS FFI bridging, and package deployment pipeline) is copyright **Chuck Talk (`chuck@nordheim.online`)**. ModFS is maintained firmly under the original open-source license, enforcing the sanctity of the codebase against hijacking while enhancing platform availability.
 
 ## Modernization
-By bridging the C indexed database over Dart FFI (Foreign Function Interface), ModFS maintains index building speeds capable of parsing millions of files in mere moments. However, by replacing the GTK3 front-end with Flutter, ModFS achieves smooth, 120hz declarative UI across **macOS** and **Linux**, offering seamless client-side rendering and detached isolate thread management.
+By bridging the C indexed database over Dart FFI (Foreign Function Interface), ModFS maintains index building speeds capable of parsing millions of files in mere moments. However, by replacing the GTK3 front-end with Flutter, ModFS achieves smooth, 120hz declarative UI across **macOS** offering seamless client-side rendering and detached isolate thread management.
 
 ---
 
 ## 🛠 Installation
-
-### Linux
-ModFS distributes a hardened, natively signed `.deb` payload that automatically injects the compiled GTK/Flutter bundle securely.
-
-1. Download the latest `.deb` package from the [GitHub Releases](https://github.com/TaliskerMan/ModFS/releases).
-2. Install via your package manager:
-   ```bash
-   sudo dpkg -i ModFS_linux_1.0.0-9_amd64.deb
-   ```
-3. Launch `modfs` locally from your applications menu.
 
 ### macOS
 For macOS users, ModFS is distributed as a pre-compiled `.dmg` package bypassing the requirement for Sandbox entitlement collisions via static FFI resolution.
@@ -42,7 +32,6 @@ For macOS users, ModFS is distributed as a pre-compiled `.dmg` package bypassing
 ## ⚙️ Configuration
 
 ModFS stores diagnostic logs and local SQLite persistence databases inherently in user-protected space:
-- **Linux:** `~/.local/share/modfs/`
 - **macOS:** `~/Library/Application Support/com.example.modfs/`
 
 Inside these directories, you will find `modfs.log` which captures diagnostic background scan faults and active metrics.
