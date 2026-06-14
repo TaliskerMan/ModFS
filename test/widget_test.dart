@@ -1,19 +1,19 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+/// Basic widget tests for the ModFS application.
+///
+/// These tests verify basic UI rendering, widget interactions, and initial configurations.
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:modfs/main.dart';
 
+/// Main entry point for the ModFS widget test suite.
 void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  /// Smoke test that verifies the app initializes and renders the main title.
   testWidgets('ModFS smoke test', (WidgetTester tester) async {
     final prefs = await SharedPreferences.getInstance();
 

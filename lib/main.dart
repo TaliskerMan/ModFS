@@ -18,11 +18,13 @@ void main() async {
   runApp(ModFSApp(prefs: prefs));
 }
 
-/// Documentation for getLibraryPath.
+/// Resolves the absolute path to the native shared library (`libmodfs_core.so` or `libmodfs_core.dylib`).
+///
+/// It checks bundle frameworks on macOS, fallback paths, and local development build folders.
 String getLibraryPath() {
   final libraryName = Platform.isMacOS ? 'libmodfs_core.dylib' : 'libmodfs_core.so';
   
-  /// Documentation for if.
+  // If running on macOS, check if the library is bundled within the App's Frameworks directory.
   if (Platform.isMacOS) {
     final executable = Platform.resolvedExecutable;
     if (executable.contains('.app/Contents/MacOS/')) {
@@ -39,7 +41,7 @@ String getLibraryPath() {
     '/Users/charlestalk/AntiGravity/ModFS/src/$libraryName', // Hardcoded absolute workspace fallback
   ];
 
-  /// Documentation for for.
+  // Search through the potential search paths to locate the native binary file.
   for (final path in pathsToCheck) {
     if (File(path).existsSync()) {
       return File(path).absolute.path;
@@ -50,19 +52,24 @@ String getLibraryPath() {
   return libraryName;
 }
 
-/// Documentation for AppState.
+/// Represents the user's custom preferences including theme and font size.
 class AppState {
+  /// The selected color theme mode (system, light, or dark).
   final ThemeMode themeMode;
+
+  /// The text scale/font size multiplier.
   final double fontSize;
   
   AppState({required this.themeMode, required this.fontSize});
 }
 
-/// Documentation for ModFSApp.
+/// The main entry widget for the ModFS application.
 class ModFSApp extends StatefulWidget {
+  /// Local key-value store for saving user preference configurations.
   final SharedPreferences prefs;
   const ModFSApp({super.key, required this.prefs});
 
+  /// Accesses the nearest ancestor [ModFSAppState] to change app preferences.
   static ModFSAppState? of(BuildContext context) =>
       context.findAncestorStateOfType<ModFSAppState>();
 
@@ -70,7 +77,7 @@ class ModFSApp extends StatefulWidget {
   State<ModFSApp> createState() => ModFSAppState();
 }
 
-/// Documentation for ModFSAppState.
+/// State for [ModFSApp] managing dynamic updates to theme and font sizes.
 class ModFSAppState extends State<ModFSApp> {
   late ThemeMode _themeMode;
   late double _fontSize;
@@ -83,17 +90,22 @@ class ModFSAppState extends State<ModFSApp> {
     _fontSize = widget.prefs.getDouble('font_size') ?? 14.0;
   }
   
+  /// The current font size configuration.
   double get fontSize => _fontSize;
+
+  /// The current theme mode configuration.
   ThemeMode get themeMode => _themeMode;
+
+  /// The shared preference instance cached during initialization.
   SharedPreferences get prefs => widget.prefs;
 
-  /// Documentation for updateTheme.
+  /// Updates the application-wide theme and persists the choice to disk.
   void updateTheme(ThemeMode mode) {
     widget.prefs.setInt('theme_mode', mode.index);
     setState(() => _themeMode = mode);
   }
 
-  /// Documentation for updateFontSize.
+  /// Updates the application-wide font size and persists the choice to disk.
   void updateFontSize(double size) {
     widget.prefs.setDouble('font_size', size);
     setState(() => _fontSize = size);
@@ -134,30 +146,42 @@ class ModFSAppState extends State<ModFSApp> {
   }
 }
 
-/// Documentation for SearchResult.
+/// Represents a file or folder record found in the search result matching the query.
 class SearchResult {
+  /// The absolute canonical path to the file or directory.
   final String path;
+
+  /// The size of the file in bytes. Defaults to 0 for directories.
   final int size;
+
+  /// The last modified time in seconds (POSIX timestamp) for the file.
   final int mtime;
+
+  /// Indicates if this record represents a directory folder.
   final bool isFolder;
 
   SearchResult({required this.path, required this.size, required this.mtime, required this.isFolder});
+
+  /// Extracts the filename or directory name from the end of the [path].
   String get name => path.split('/').last;
 }
 
-/// Documentation for SearchScreen.
+/// The primary UI screen providing file searching capabilities.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
+/// Helper function to build a background task closure executed inside an Isolate.
+///
+/// Prevents main UI thread starvation when loading or scanning the large index.
 Future<void> Function() _buildIsolateTask(String libPath, int dbAddr, String dbPath, bool forceScan) {
-  /// Documentation for return.
+  // Returns the async closure to execute inside a background worker.
   return () async {
     final isolateModfs = ModFSBindings(libPath);
     final ptr = Pointer<Void>.fromAddress(dbAddr);
-    /// Documentation for if.
+    // Scan and write DB to disk if requested, or load cached DB from disk.
     if (forceScan) {
       isolateModfs.scanDatabase(ptr);
       isolateModfs.saveDatabase(ptr, dbPath);
@@ -205,10 +229,10 @@ class _SearchScreenState extends State<SearchScreen> {
       
       List<String> defaultExcs = ['/proc', '/sys', '/dev', '/run', '/var/run', '/tmp', '/var/tmp', '$defaultHome/.gvfs', '$defaultHome/.cache', '/var/lib/docker'];
       List<String> savedExcs = prefs.getStringList('exclude_paths') ?? [];
-      /// Documentation for if.
+      // If excludes have been configured, ensure required default system exclusions are also present.
       if (savedExcs.isNotEmpty) {
         bool changed = false;
-        /// Documentation for for.
+        // Verify that critical runtime and system mounts are in the exclusion list.
         for (var d in defaultExcs) {
           if (!savedExcs.contains(d)) {
             savedExcs.add(d);
@@ -220,7 +244,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _excludes = savedExcs.isEmpty ? defaultExcs : savedExcs;
       
       if (Platform.environment.containsKey('FLUTTER_TEST')) {
-        /// Documentation for setState.
+        // In widget test environment, configure stub totals instead of triggering FFI initialization.
         setState(() {
           _totalFiles = 100;
           _totalFolders = 20;
@@ -242,7 +266,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _loadOrScanDB({bool forceScan = false}) async {
     setState(() => _isScanning = true);
     
-    /// Documentation for if.
+    // Free existing database instance in memory before creating/loading a new one.
     if (dbPtr != null) {
       modfs.freeDatabase(dbPtr!);
       dbPtr = null;
@@ -254,7 +278,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final dbAddr = dbPtr!.address;
       final dbPathLocal = _dbPath;
       final libPathLocal = getLibraryPath();
-      /// Documentation for if.
+      // Choose whether to perform a fresh disk scan or load from cached DB.
       if (forceScan) {
          await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, true));
       } else {
@@ -266,12 +290,12 @@ class _SearchScreenState extends State<SearchScreen> {
       AppLogger.log("Native Error: $e");
     }
     
-    /// Documentation for if.
+    // Check if widget state is still active in the widget tree before updating state.
     if (mounted) {
-      /// Documentation for setState.
+      // Update local state variables to reflect loading is complete and count files.
       setState(() {
         _isScanning = false;
-        /// Documentation for if.
+        // Verify database ptr is valid before querying the total number of files/folders.
         if (dbPtr != null) {
            _totalFiles = modfs.getNumFiles(dbPtr!);
            _totalFolders = modfs.getNumFolders(dbPtr!);
@@ -289,7 +313,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (dbPtr == null || _isScanning) return;
     
     final resPtr = modfs.search(dbPtr!, query);
-    /// Documentation for if.
+    // Ensure search results pointer from native engine is valid before parsing results.
     if (resPtr != nullptr) {
       final foldersCount = modfs.getFoldersCount(resPtr);
       final filesCount = modfs.getFilesCount(resPtr);
@@ -298,18 +322,18 @@ class _SearchScreenState extends State<SearchScreen> {
       final int folderLimit = foldersCount > 200 ? 200 : foldersCount;
       final int fileLimit = filesCount > 500 ? 500 : filesCount;
 
-      /// Documentation for for.
+      // Extract each folder item path and construct the search result object.
       for (int i = 0; i < folderLimit; i++) {
         final path = modfs.getFolderPath(resPtr, i);
-        /// Documentation for if.
+        // Verify folder path returned from native FFI is non-null.
         if (path != null) {
            newRes.add(SearchResult(path: path, size: 0, mtime: 0, isFolder: true));
         }
       }
-      /// Documentation for for.
+      // Extract each file item path/attributes and construct the search result object.
       for (int i = 0; i < fileLimit; i++) {
         final path = modfs.getFilePath(resPtr, i);
-        /// Documentation for if.
+        // Verify file path returned from native FFI is non-null.
         if (path != null) {
            final size = modfs.getFileSize(resPtr, i);
            final mtime = modfs.getFileMtime(resPtr, i);
@@ -366,7 +390,7 @@ class _SearchScreenState extends State<SearchScreen> {
     double size = bytes.toDouble();
     List<String> suffix = ['B', 'KB', 'MB', 'GB', 'TB'];
     int idx = 0;
-    /// Documentation for while.
+    // Scale byte count size down by divisions of 1024 until it fits a human-readable suffix unit.
     while (size > 1024 && idx < suffix.length - 1) {
       size /= 1024;
       idx++;
@@ -604,10 +628,15 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 }
 
-/// Documentation for SettingsScreen.
+/// A configuration page where user can customize application appearance preferences and directories.
 class SettingsScreen extends StatefulWidget {
+  /// The list of target folders currently configured for search scans.
   final List<String> includes;
+
+  /// The list of directories to exclude from search scans.
   final List<String> excludes;
+
+  /// Callback function triggered when directories are added or removed.
   final Function(List<String>, List<String>) onPathsUpdated;
   
   const SettingsScreen({super.key, required this.includes, required this.excludes, required this.onPathsUpdated});
@@ -719,10 +748,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               value: appState.themeMode,
               dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
               onChanged: (ThemeMode? val) {
-                /// Documentation for if.
+                // Ensure dropdown selection value is not null.
                 if (val != null) {
                   appState.updateTheme(val);
-                  /// Documentation for setState.
+                  // Refresh UI immediately to reflect selection.
                   setState(() {});
                 }
               },
@@ -740,10 +769,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             value: appState.fontSize,
             dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
             onChanged: (double? val) {
-              /// Documentation for if.
+              // Ensure font size dropdown selection value is not null.
               if (val != null) {
                 appState.updateFontSize(val);
-                /// Documentation for setState.
+                // Refresh local UI to render custom fonts using updated size.
                 setState(() {});
               }
             },
