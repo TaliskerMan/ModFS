@@ -1,3 +1,16 @@
+modfs (1.0.0-1) unstable; urgency=medium
+
+  * Rename the Debian source/binary package from "fsearch" to "modfs" and set
+    the ModFS maintainer; align version with pubspec (1.0.0).
+  * Identity: converge app ID to io.github.taliskerman.modfs; drop the
+    com.example placeholder.
+  * GPL compliance: state GPLv2-or-later for the whole combined work and the
+    corresponding-source offer (see README).
+  * Note: macOS (.dmg) is the primary supported channel; this Debian packaging
+    is community/unsupported.
+
+ -- Chuck Talk <chuck@nordheim.online>  Tue, 23 Jun 2026 12:00:00 -0500
+
 fsearch (0.2) unstable; urgency=medium
 
   * New upstream release.

@@ -163,3 +163,21 @@ po/stamp-it
 .pub-cache/
 .pub/
 build/
+
+# Release artifacts and build outputs — keep these in GitHub Releases, not git
+*.dmg
+*.deb
+*.deb.sig
+*.sig
+SHA512SUMS
+ModFS_vulnerability_report.txt
+/linbld/
+/deb_dist/
+/extracted_deb/
+/debian/modfs/
+/debian/fsearch/
+
+# debian build product debris
+/debian/.debhelper/
+/debian/files
+/debian/*.substvars

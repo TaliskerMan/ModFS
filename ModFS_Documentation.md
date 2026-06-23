@@ -53,7 +53,7 @@ ModFS is built with modern security principles at its core, enabling use in stri
   - Binaries are comprehensively signed for secure execution.
 - **Secure Data Storage:** The app stores all files safely in isolated user-protected space:
   - **Linux:** `~/.local/share/modfs/`
-  - **macOS:** `~/Library/Application Support/com.example.modfs/`
+  - **macOS:** `~/Library/Application Support/io.github.taliskerman.modfs/`
 - **Transparent Logging:** The application generates persistent diagnostic logs (such as `modfs.log`), capturing all background background metrics and errors. This allows for simple security compliance reviews and easy support troubleshooting.
 
 ![Settings and Audit Placeholder](/placeholder-settings.png)

@@ -36,19 +36,30 @@ String getLibraryPath() {
     }
   }
 
-  final pathsToCheck = [
-    'src/$libraryName', // Local development
-    '/Users/charlestalk/AntiGravity/ModFS/src/$libraryName', // Hardcoded absolute workspace fallback
+  // Resolve candidate locations without any developer-specific absolute paths.
+  final exeDir = File(Platform.resolvedExecutable).parent.path;
+  final candidates = <String>[
+    // Explicit override for packagers / unusual installs.
+    if (Platform.environment['MODFS_CORE_LIB'] != null)
+      Platform.environment['MODFS_CORE_LIB']!,
+    // Next to the executable (e.g. Linux .deb install layout).
+    '$exeDir/$libraryName',
+    '$exeDir/lib/$libraryName',
+    // Linux packaged install prefix.
+    '/opt/modfs/lib/$libraryName',
+    // Local development build tree (relative to CWD).
+    'src/$libraryName',
   ];
 
   // Search through the potential search paths to locate the native binary file.
-  for (final path in pathsToCheck) {
-    if (File(path).existsSync()) {
+  for (final path in candidates) {
+    if (path.isNotEmpty && File(path).existsSync()) {
       return File(path).absolute.path;
     }
   }
-  
-  // Allow loading from current working directory or absolute locations if bundled
+
+  // Fall back to the bare name so the dynamic loader can resolve it via the
+  // standard search path (rpath / LD_LIBRARY_PATH / DYLD path).
   return libraryName;
 }
 
@@ -315,39 +326,45 @@ class _SearchScreenState extends State<SearchScreen> {
     final resPtr = modfs.search(dbPtr!, query);
     // Ensure search results pointer from native engine is valid before parsing results.
     if (resPtr != nullptr) {
-      final foldersCount = modfs.getFoldersCount(resPtr);
-      final filesCount = modfs.getFilesCount(resPtr);
-      
       final List<SearchResult> newRes = [];
-      final int folderLimit = foldersCount > 200 ? 200 : foldersCount;
-      final int fileLimit = filesCount > 500 ? 500 : filesCount;
+      // Guarantee the native search-result handle is released even if parsing
+      // throws — otherwise every failed parse leaks a result set (P2-7).
+      try {
+        final foldersCount = modfs.getFoldersCount(resPtr);
+        final filesCount = modfs.getFilesCount(resPtr);
 
-      // Extract each folder item path and construct the search result object.
-      for (int i = 0; i < folderLimit; i++) {
-        final path = modfs.getFolderPath(resPtr, i);
-        // Verify folder path returned from native FFI is non-null.
-        if (path != null) {
-           newRes.add(SearchResult(path: path, size: 0, mtime: 0, isFolder: true));
+        final int folderLimit = foldersCount > 200 ? 200 : foldersCount;
+        final int fileLimit = filesCount > 500 ? 500 : filesCount;
+
+        // Extract each folder item path and construct the search result object.
+        for (int i = 0; i < folderLimit; i++) {
+          final path = modfs.getFolderPath(resPtr, i);
+          // Verify folder path returned from native FFI is non-null.
+          if (path != null) {
+            newRes.add(SearchResult(path: path, size: 0, mtime: 0, isFolder: true));
+          }
         }
-      }
-      // Extract each file item path/attributes and construct the search result object.
-      for (int i = 0; i < fileLimit; i++) {
-        final path = modfs.getFilePath(resPtr, i);
-        // Verify file path returned from native FFI is non-null.
-        if (path != null) {
-           final size = modfs.getFileSize(resPtr, i);
-           final mtime = modfs.getFileMtime(resPtr, i);
-           newRes.add(SearchResult(path: path, size: size, mtime: mtime, isFolder: false));
+        // Extract each file item path/attributes and construct the search result object.
+        for (int i = 0; i < fileLimit; i++) {
+          final path = modfs.getFilePath(resPtr, i);
+          // Verify file path returned from native FFI is non-null.
+          if (path != null) {
+            final size = modfs.getFileSize(resPtr, i);
+            final mtime = modfs.getFileMtime(resPtr, i);
+            newRes.add(SearchResult(path: path, size: size, mtime: mtime, isFolder: false));
+          }
         }
+      } finally {
+        modfs.freeSearchResult(resPtr);
       }
-      
-      modfs.freeSearchResult(resPtr);
       if (mounted) setState(() => _results = newRes);
     }
   }
 
   void _openPath(String path) {
-    Process.run('xdg-open', [path]).catchError((e) {
+    // macOS opener (the supported platform); fall back to xdg-open elsewhere.
+    final opener = Platform.isMacOS ? 'open' : 'xdg-open';
+    Process.run(opener, [path]).catchError((e) {
       debugPrint("Could not open $path: $e");
       return ProcessResult(0, 1, '', 'Failed to launch');
     });

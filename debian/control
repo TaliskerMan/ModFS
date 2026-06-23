@@ -1,7 +1,7 @@
-Source: fsearch
+Source: modfs
 Section: utils
 Priority: optional
-Maintainer: Christian Boxdörfer <christian.boxdoerfer@posteo.de>
+Maintainer: Chuck Talk <chuck@nordheim.online>
 Build-Depends: debhelper (>=9),
     build-essential,
     appstream,
@@ -15,14 +15,14 @@ Build-Depends: debhelper (>=9),
     libxml2-utils,
     meson
 Standards-Version: 3.9.6
-Homepage: https://cboxdoerfer.github.io/fsearch/
+Homepage: https://github.com/TaliskerMan/ModFS
 
-Package: fsearch
+Package: modfs
 Architecture: any
-Replaces: fsearch-trunk
-Breaks: fsearch-trunk
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: A fast graphical file search utility
-    FSearch is a fast file search utility, based on GTK3.
-    It supports regular expressions, wildcards, fast sorting,
-    instant results with millions of files and more.
+Description: Fast file search built on the FSearch engine
+    ModFS is a Flutter front-end over the FSearch C indexer (via Dart FFI).
+    It supports regular expressions, wildcards, fast sorting, and instant
+    results across millions of files. GPLv2-or-later fork of FSearch; the
+    primary supported platform is macOS (this Debian packaging is community/
+    unsupported).

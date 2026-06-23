@@ -15,7 +15,7 @@
 3. **Hardened Runtime Segmentation Vaults (`SIGKILL`)**:
    - **Fix**: The Database Rebuild was silently crashing the app because Apple's Hardened Runtime immediately rejects unsigned external payloads. `codesign --deep` natively ignores `.dylib` injections, so we amended `build_macos.sh` to forcefully and explicitly code-sign the backend library directly using the `Developer ID Application` keychain profile. 
 4. **Diagnostic Logging (Rule 006)**:
-   - **Fix**: Bootstrapped `AppLogger.init()` to record caught application faults to `~/Library/Application Support/com.example.modfs/modfs.log`.
+   - **Fix**: Bootstrapped `AppLogger.init()` to record caught application faults to `~/Library/Application Support/io.github.taliskerman.modfs/modfs.log`.
 5. **App Icons & Version Alignment (Rule 007)**:
    - **Fix**: Auto-incremented release tags across the CLI bash script, routing automatically into `lib/version.dart` to match identically in the UI About Tab. Re-scaled `modfs.png` uniformly across Mac targets via `sips`. 
 

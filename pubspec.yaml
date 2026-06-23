@@ -1,5 +1,5 @@
 name: modfs
-description: "A new Flutter project."
+description: "macOS file-search app: a Flutter front-end over the FSearch C indexer via Dart FFI. GPLv2-or-later fork of FSearch."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
