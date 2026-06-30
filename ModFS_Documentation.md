@@ -48,8 +48,9 @@ When opening ModFS for the first time, you need to build the initial directory i
 ModFS is built with modern security principles at its core, enabling use in strict enterprise environments.
 
 - **Auditable Open-Source Code:** The entire codebase is completely open-source under the GNU GPL v2 license, ensuring total transparency and security auditability by researchers and the community.
+- **Zero Telemetry:** ModFS operates fully offline with absolutely no remote data collection or telemetry.
 - **Hardened Executables:** 
-  - On macOS, builds conform to Apple's **Hardened Runtime** requirements to prevent code injection and tampering.
+  - On macOS, builds conform to Apple's **Hardened Runtime** requirements (including dynamic library validation exemptions for FFI) to prevent code injection and tampering.
   - Binaries are comprehensively signed for secure execution.
 - **Secure Data Storage:** The app stores all files safely in isolated user-protected space:
   - **Linux:** `~/.local/share/modfs/`

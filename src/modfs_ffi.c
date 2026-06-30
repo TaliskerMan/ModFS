@@ -11,17 +11,17 @@
 
 void* modfs_db_new(const char** includes, int num_includes, const char** excludes, int num_excludes, bool exclude_hidden) {
     GList *g_includes = NULL;
-    for (int i = 0; i < num_includes; i++) {
+    for (int index = 0; index < num_includes; index++) {
         GDateTime* dt = g_date_time_new_now_local();
         time_t t = g_date_time_to_unix(dt);
         g_date_time_unref(dt);
-        FsearchIndex* idx = fsearch_index_new(FSEARCH_INDEX_FOLDER_TYPE, includes[i], true, true, false, t);
-        g_includes = g_list_append(g_includes, idx);
+        FsearchIndex* folderIndex = fsearch_index_new(FSEARCH_INDEX_FOLDER_TYPE, includes[index], true, true, false, t);
+        g_includes = g_list_append(g_includes, folderIndex);
     }
     GList *g_excludes = NULL;
-    for (int i = 0; i < num_excludes; i++) {
-        FsearchExcludePath* idx = fsearch_exclude_path_new(excludes[i], true);
-        g_excludes = g_list_append(g_excludes, idx);
+    for (int index = 0; index < num_excludes; index++) {
+        FsearchExcludePath* excludePath = fsearch_exclude_path_new(excludes[index], true);
+        g_excludes = g_list_append(g_excludes, excludePath);
     }
     
     FsearchDatabase* db = db_new(g_includes, g_excludes, NULL, exclude_hidden);

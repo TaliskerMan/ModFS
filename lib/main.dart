@@ -269,8 +269,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
       modfs = ModFSBindings(getLibraryPath());
       _loadOrScanDB();
-    } catch (e) {
-      AppLogger.log("ModFS Init Error: $e");
+    } catch (error) {
+      AppLogger.log("ModFS Init Error: $error");
     }
   }
 
@@ -297,8 +297,8 @@ class _SearchScreenState extends State<SearchScreen> {
             await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, false));
          }
       }
-    } catch (e) {
-      AppLogger.log("Native Error: $e");
+    } catch (error) {
+      AppLogger.log("Native Error: $error");
     }
     
     // Check if widget state is still active in the widget tree before updating state.
@@ -337,20 +337,20 @@ class _SearchScreenState extends State<SearchScreen> {
         final int fileLimit = filesCount > 500 ? 500 : filesCount;
 
         // Extract each folder item path and construct the search result object.
-        for (int i = 0; i < folderLimit; i++) {
-          final path = modfs.getFolderPath(resPtr, i);
+        for (int index = 0; index < folderLimit; index++) {
+          final path = modfs.getFolderPath(resPtr, index);
           // Verify folder path returned from native FFI is non-null.
           if (path != null) {
             newRes.add(SearchResult(path: path, size: 0, mtime: 0, isFolder: true));
           }
         }
         // Extract each file item path/attributes and construct the search result object.
-        for (int i = 0; i < fileLimit; i++) {
-          final path = modfs.getFilePath(resPtr, i);
+        for (int fileIndex = 0; fileIndex < fileLimit; fileIndex++) {
+          final path = modfs.getFilePath(resPtr, fileIndex);
           // Verify file path returned from native FFI is non-null.
           if (path != null) {
-            final size = modfs.getFileSize(resPtr, i);
-            final mtime = modfs.getFileMtime(resPtr, i);
+            final size = modfs.getFileSize(resPtr, fileIndex);
+            final mtime = modfs.getFileMtime(resPtr, fileIndex);
             newRes.add(SearchResult(path: path, size: size, mtime: mtime, isFolder: false));
           }
         }
@@ -364,8 +364,8 @@ class _SearchScreenState extends State<SearchScreen> {
   void _openPath(String path) {
     // macOS opener (the supported platform); fall back to xdg-open elsewhere.
     final opener = Platform.isMacOS ? 'open' : 'xdg-open';
-    Process.run(opener, [path]).catchError((e) {
-      debugPrint("Could not open $path: $e");
+    Process.run(opener, [path]).catchError((error) {
+      debugPrint("Could not open $path: $error");
       return ProcessResult(0, 1, '', 'Failed to launch');
     });
   }
@@ -378,7 +378,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void _openSettings() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (c) => SettingsScreen(
+      MaterialPageRoute(builder: (context) => SettingsScreen(
         includes: _includes,
         excludes: _excludes,
         onPathsUpdated: (incs, excs) async {
@@ -406,13 +406,13 @@ class _SearchScreenState extends State<SearchScreen> {
     if (bytes == 0) return '';
     double size = bytes.toDouble();
     List<String> suffix = ['B', 'KB', 'MB', 'GB', 'TB'];
-    int idx = 0;
+    int unitIndex = 0;
     // Scale byte count size down by divisions of 1024 until it fits a human-readable suffix unit.
-    while (size > 1024 && idx < suffix.length - 1) {
+    while (size > 1024 && unitIndex < suffix.length - 1) {
       size /= 1024;
-      idx++;
+      unitIndex++;
     }
-    return '${size.toStringAsFixed(1)} ${suffix[idx]}';
+    return '${size.toStringAsFixed(1)} ${suffix[unitIndex]}';
   }
 
   @override
@@ -561,7 +561,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildResultsList(bool isDark) {
     if (_results.isEmpty) return const SizedBox.shrink();
-    final double fs = ModFSApp.of(context)!.fontSize;
+    final double fontSize = ModFSApp.of(context)!.fontSize;
 
     return Container(
       margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 4),
@@ -600,7 +600,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     Icon(
                       res.isFolder ? Icons.folder_rounded : Icons.insert_drive_file_rounded,
                       color: res.isFolder ? const Color(0xFF635BFF) : const Color(0xFF00D1FF),
-                      size: fs + 6,
+                      size: fontSize + 6,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -610,14 +610,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         children: [
                           Text(
                             res.name,
-                            style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600, fontSize: fs),
+                            style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600, fontSize: fontSize),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
                             res.path,
-                            style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: fs * 0.8),
+                            style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: fontSize * 0.8),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -631,7 +631,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         child: Text(
                           _formatSize(res.size),
                           textAlign: TextAlign.right,
-                          style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: fs * 0.85, fontWeight: FontWeight.w500),
+                          style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: fontSize * 0.85, fontWeight: FontWeight.w500),
                         ),
                       )
                   ],
@@ -764,10 +764,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             trailing: DropdownButton<ThemeMode>(
               value: appState.themeMode,
               dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
-              onChanged: (ThemeMode? val) {
+              onChanged: (ThemeMode? value) {
                 // Ensure dropdown selection value is not null.
-                if (val != null) {
-                  appState.updateTheme(val);
+                if (value != null) {
+                  appState.updateTheme(value);
                   // Refresh UI immediately to reflect selection.
                   setState(() {});
                 }
@@ -785,17 +785,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           DropdownButton<double>(
             value: appState.fontSize,
             dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
-            onChanged: (double? val) {
+            onChanged: (double? value) {
               // Ensure font size dropdown selection value is not null.
-              if (val != null) {
-                appState.updateFontSize(val);
+              if (value != null) {
+                appState.updateFontSize(value);
                 // Refresh local UI to render custom fonts using updated size.
                 setState(() {});
               }
             },
-            items: List.generate(11, (index) {
-              double val = 8.0 + index;
-              return DropdownMenuItem(value: val, child: Text(val.toInt().toString(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)));
+            items: List.generate(11, (loopIndex) {
+              double value = 8.0 + loopIndex;
+              return DropdownMenuItem(value: value, child: Text(value.toInt().toString(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)));
             }),
           )
         ],
@@ -853,7 +853,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           Expanded(
             child: ListView.builder(
               itemCount: list.length,
-              itemBuilder: (ctx, index) {
+              itemBuilder: (context, index) {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(list[index], style: TextStyle(color: isDark ? Colors.white : Colors.black87)),

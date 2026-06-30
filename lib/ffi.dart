@@ -103,8 +103,8 @@ class ModFSBindings {
     if (strings.isEmpty) return nullptr;
     final Pointer<Pointer<Utf8>> arr = malloc.allocate(strings.length * sizeOf<Pointer<Utf8>>());
     // Converts Dart string values into native UTF-8 strings.
-    for (int i = 0; i < strings.length; i++) {
-        arr[i] = strings[i].toNativeUtf8();
+    for (int index = 0; index < strings.length; index++) {
+        arr[index] = strings[index].toNativeUtf8();
     }
     return arr;
   }
