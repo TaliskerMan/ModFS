@@ -1,6 +1,6 @@
-Dart SDK 3.11.4
-Flutter SDK 3.41.6
-modfs 1.0.0+15
+Dart SDK 3.12.2
+Flutter SDK 3.44.5
+modfs 1.0.0+29
 ├── cupertino_icons 1.0.9
 ├── ffi 2.2.0
 ├── flutter 0.0.0
@@ -8,7 +8,7 @@ modfs 1.0.0+15
 │   ├── collection 1.19.1
 │   ├── material_color_utilities 0.13.0
 │   │   └── collection...
-│   ├── meta 1.17.0
+│   ├── meta 1.18.0
 │   ├── sky_engine 0.0.0
 │   └── vector_math 2.2.0
 ├── flutter_lints 6.0.0
@@ -46,7 +46,7 @@ modfs 1.0.0+15
 │   │   └── path...
 │   ├── stream_channel 2.1.4
 │   │   └── async...
-│   ├── test_api 0.7.10
+│   ├── test_api 0.7.11
 │   │   ├── async 2.13.1
 │   │   │   ├── collection...
 │   │   │   └── meta...
@@ -197,32 +197,32 @@ modfs 1.0.0+15
         └── url_launcher_platform_interface...
 
 === C Backend Library Dependencies ===
-	linux-vdso.so.1 (0x000076441ac7a000)
-	libgio-2.0.so.0 => /lib/x86_64-linux-gnu/libgio-2.0.so.0 (0x000076441aa4d000)
-	libpcre2-8.so.0 => /lib/x86_64-linux-gnu/libpcre2-8.so.0 (0x000076441a9b3000)
-	libicuuc.so.74 => /lib/x86_64-linux-gnu/libicuuc.so.74 (0x000076441a600000)
-	libpango-1.0.so.0 => /lib/x86_64-linux-gnu/libpango-1.0.so.0 (0x000076441a948000)
-	libgobject-2.0.so.0 => /lib/x86_64-linux-gnu/libgobject-2.0.so.0 (0x000076441a8e5000)
-	libglib-2.0.so.0 => /lib/x86_64-linux-gnu/libglib-2.0.so.0 (0x000076441a4b7000)
-	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x000076441a3ce000)
-	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x000076441a000000)
-	libgmodule-2.0.so.0 => /lib/x86_64-linux-gnu/libgmodule-2.0.so.0 (0x000076441a8dc000)
-	libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x000076441a8c0000)
-	libmount.so.1 => /lib/x86_64-linux-gnu/libmount.so.1 (0x000076441a873000)
-	libselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x000076441a844000)
-	libicudata.so.74 => /lib/x86_64-linux-gnu/libicudata.so.74 (0x0000764418200000)
-	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x0000764417e00000)
-	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x000076441a816000)
-	/lib64/ld-linux-x86-64.so.2 (0x000076441ac7c000)
-	libfribidi.so.0 => /lib/x86_64-linux-gnu/libfribidi.so.0 (0x000076441a3b0000)
-	libthai.so.0 => /lib/x86_64-linux-gnu/libthai.so.0 (0x000076441a3a5000)
-	libharfbuzz.so.0 => /lib/x86_64-linux-gnu/libharfbuzz.so.0 (0x000076441a298000)
-	libffi.so.8 => /lib/x86_64-linux-gnu/libffi.so.8 (0x000076441a28c000)
-	libblkid.so.1 => /lib/x86_64-linux-gnu/libblkid.so.1 (0x000076441a251000)
-	libdatrie.so.1 => /lib/x86_64-linux-gnu/libdatrie.so.1 (0x000076441a248000)
-	libfreetype.so.6 => /lib/x86_64-linux-gnu/libfreetype.so.6 (0x0000764418134000)
-	libgraphite2.so.3 => /lib/x86_64-linux-gnu/libgraphite2.so.3 (0x000076441a222000)
-	libbz2.so.1.0 => /lib/x86_64-linux-gnu/libbz2.so.1.0 (0x0000764419fec000)
-	libpng16.so.16 => /lib/x86_64-linux-gnu/libpng16.so.16 (0x0000764419fb4000)
-	libbrotlidec.so.1 => /lib/x86_64-linux-gnu/libbrotlidec.so.1 (0x000076441a214000)
-	libbrotlicommon.so.1 => /lib/x86_64-linux-gnu/libbrotlicommon.so.1 (0x0000764419f91000)
+	linux-vdso.so.1 (0x0000fd32ba86f000)
+	libm.so.6 => /lib/aarch64-linux-gnu/libm.so.6 (0x0000fd32ba710000)
+	libgio-2.0.so.0 => /lib/aarch64-linux-gnu/libgio-2.0.so.0 (0x0000fd32ba500000)
+	libgobject-2.0.so.0 => /lib/aarch64-linux-gnu/libgobject-2.0.so.0 (0x0000fd32ba470000)
+	libglib-2.0.so.0 => /lib/aarch64-linux-gnu/libglib-2.0.so.0 (0x0000fd32ba2f0000)
+	libpango-1.0.so.0 => /lib/aarch64-linux-gnu/libpango-1.0.so.0 (0x0000fd32ba260000)
+	libpcre2-8.so.0 => /lib/aarch64-linux-gnu/libpcre2-8.so.0 (0x0000fd32ba1b0000)
+	libicuuc.so.74 => /lib/aarch64-linux-gnu/libicuuc.so.74 (0x0000fd32b9f70000)
+	libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000fd32b9db0000)
+	/lib/ld-linux-aarch64.so.1 (0x0000fd32ba820000)
+	libgmodule-2.0.so.0 => /lib/aarch64-linux-gnu/libgmodule-2.0.so.0 (0x0000fd32b9d80000)
+	libz.so.1 => /lib/aarch64-linux-gnu/libz.so.1 (0x0000fd32b9d40000)
+	libmount.so.1 => /lib/aarch64-linux-gnu/libmount.so.1 (0x0000fd32b9cd0000)
+	libselinux.so.1 => /lib/aarch64-linux-gnu/libselinux.so.1 (0x0000fd32b9c80000)
+	libffi.so.8 => /lib/aarch64-linux-gnu/libffi.so.8 (0x0000fd32b9c50000)
+	libfribidi.so.0 => /lib/aarch64-linux-gnu/libfribidi.so.0 (0x0000fd32b9c10000)
+	libthai.so.0 => /lib/aarch64-linux-gnu/libthai.so.0 (0x0000fd32b9be0000)
+	libharfbuzz.so.0 => /lib/aarch64-linux-gnu/libharfbuzz.so.0 (0x0000fd32b9ab0000)
+	libicudata.so.74 => /lib/aarch64-linux-gnu/libicudata.so.74 (0x0000fd32b7d30000)
+	libstdc++.so.6 => /lib/aarch64-linux-gnu/libstdc++.so.6 (0x0000fd32b7aa0000)
+	libgcc_s.so.1 => /lib/aarch64-linux-gnu/libgcc_s.so.1 (0x0000fd32b7a60000)
+	libblkid.so.1 => /lib/aarch64-linux-gnu/libblkid.so.1 (0x0000fd32b7a00000)
+	libdatrie.so.1 => /lib/aarch64-linux-gnu/libdatrie.so.1 (0x0000fd32b79d0000)
+	libfreetype.so.6 => /lib/aarch64-linux-gnu/libfreetype.so.6 (0x0000fd32b78e0000)
+	libgraphite2.so.3 => /lib/aarch64-linux-gnu/libgraphite2.so.3 (0x0000fd32b78a0000)
+	libbz2.so.1.0 => /lib/aarch64-linux-gnu/libbz2.so.1.0 (0x0000fd32b7870000)
+	libpng16.so.16 => /lib/aarch64-linux-gnu/libpng16.so.16 (0x0000fd32b7810000)
+	libbrotlidec.so.1 => /lib/aarch64-linux-gnu/libbrotlidec.so.1 (0x0000fd32b77e0000)
+	libbrotlicommon.so.1 => /lib/aarch64-linux-gnu/libbrotlicommon.so.1 (0x0000fd32b77a0000)

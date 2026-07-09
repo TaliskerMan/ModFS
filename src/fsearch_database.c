@@ -460,7 +460,7 @@ db_load_folders(FILE *fp,
 
         // parent_idx: index of parent folder
         uint32_t parent_idx = 0;
-        fb = copy_bytes_and_return_new_src(&parent_idx, sizeof(parent_idx), fb, 4, end);
+        DB_READ_MEM(&parent_idx, sizeof(parent_idx), fb, 4, end);
         if (!fb) return false;
 
         if (parent_idx != db_entry_get_idx(entry)) {
@@ -519,7 +519,7 @@ db_load_files(FILE *fp,
 
         // parent_idx: index of parent folder
         uint32_t parent_idx = 0;
-        fb = copy_bytes_and_return_new_src(&parent_idx, sizeof(parent_idx), fb, 4, end);
+        DB_READ_MEM(&parent_idx, sizeof(parent_idx), fb, 4, end);
         if (!fb) return false;
 
         FsearchDatabaseEntryFolder *parent = darray_get_item(folders, parent_idx);
