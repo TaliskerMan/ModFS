@@ -4,7 +4,7 @@
 
 ---
 
-ModFS is a premium, high-performance desktop file search utility designed exclusively for macOS. A modernized fork of the acclaimed `Fsearch` indexing database, ModFS bridges a secure C-indexed core backend with a 120Hz declarative Flutter interface via Dart FFI (`libmodfs_core.dylib`). This architecture delivers search queries across millions of files in real time.
+ModFS is a premium, high-performance desktop file search utility licensed under the GNU General Public License v2 (GPLv2). designed exclusively for macOS. A modernized fork of the acclaimed `Fsearch` indexing database, ModFS bridges a secure C-indexed core backend with a 120Hz declarative Flutter interface via Dart FFI (`libmodfs_core.dylib`). This architecture delivers search queries across millions of files in real time.
 
 ---
 
