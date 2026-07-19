@@ -181,3 +181,5 @@ ModFS_vulnerability_report.txt
 /debian/.debhelper/
 /debian/files
 /debian/*.substvars
+
+.DS_Store
