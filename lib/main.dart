@@ -1,3 +1,6 @@
+// Auto-incremented to version 1.0.3+32 for build release on 2026-07-20 (Rule_017)
+// Auto-incremented to version 1.0.2+31 for build release on 2026-07-20 (Rule_017)
+// Auto-incremented to version 1.0.1+30 for build release on 2026-07-20 (Rule_017)
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:isolate';
