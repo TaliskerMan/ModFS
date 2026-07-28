@@ -30,7 +30,10 @@ class AppLogger {
     if (_logFile != null) {
       final timestamp = DateTime.now().toIso8601String();
       try {
-        _logFile!.writeAsStringSync('[$timestamp] $message\n', mode: FileMode.append);
+        _logFile!.writeAsStringSync(
+          '[$timestamp] $message\n',
+          mode: FileMode.append,
+        );
       } catch (_) {}
     }
   }

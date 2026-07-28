@@ -4,8 +4,8 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:modfs/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Main entry point for the ModFS widget test suite.
 void main() {
@@ -14,7 +14,7 @@ void main() {
   });
 
   /// Smoke test that verifies the app initializes and renders the main title.
-  testWidgets('ModFS smoke test', (WidgetTester tester) async {
+  testWidgets('ModFS smoke test', (tester) async {
     final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(ModFSApp(prefs: prefs));

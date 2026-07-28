@@ -3,20 +3,21 @@
 // Auto-incremented to version 1.0.1+30 for build release on 2026-07-20 (Rule_017)
 import 'dart:async';
 import 'dart:ffi';
-import 'dart:isolate';
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'dart:isolate';
 import 'dart:ui' as ui;
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:flutter/material.dart';
+import 'package:modfs/ffi.dart';
+import 'package:modfs/logger.dart';
+import 'package:modfs/version.dart';
 import 'package:path_provider/path_provider.dart';
-import 'ffi.dart';
-import 'version.dart';
-import 'logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppLogger.init();
-  AppLogger.log("Application started");
+  AppLogger.log('Application started');
   final prefs = await SharedPreferences.getInstance();
   runApp(ModFSApp(prefs: prefs));
 }
@@ -68,20 +69,20 @@ String getLibraryPath() {
 
 /// Represents the user's custom preferences including theme and font size.
 class AppState {
+  
+  AppState({required this.themeMode, required this.fontSize});
   /// The selected color theme mode (system, light, or dark).
   final ThemeMode themeMode;
 
   /// The text scale/font size multiplier.
   final double fontSize;
-  
-  AppState({required this.themeMode, required this.fontSize});
 }
 
 /// The main entry widget for the ModFS application.
 class ModFSApp extends StatefulWidget {
+  const ModFSApp({required this.prefs, super.key});
   /// Local key-value store for saving user preference configurations.
   final SharedPreferences prefs;
-  const ModFSApp({super.key, required this.prefs});
 
   /// Accesses the nearest ancestor [ModFSAppState] to change app preferences.
   static ModFSAppState? of(BuildContext context) =>
@@ -99,7 +100,7 @@ class ModFSAppState extends State<ModFSApp> {
   @override
   void initState() {
     super.initState();
-    int themeIndex = widget.prefs.getInt('theme_mode') ?? 0; // 0: system, 1: light, 2: dark
+    final themeIndex = widget.prefs.getInt('theme_mode') ?? 0; // 0: system, 1: light, 2: dark
     _themeMode = ThemeMode.values[themeIndex];
     _fontSize = widget.prefs.getDouble('font_size') ?? 14.0;
   }
@@ -137,7 +138,6 @@ class ModFSAppState extends State<ModFSApp> {
         colorScheme: const ColorScheme.light(
           primary: Color(0xFF635BFF),
           secondary: Color(0xFF00D1FF),
-          surface: Colors.white,
         ),
         fontFamily: 'Inter',
         useMaterial3: true,
@@ -162,6 +162,8 @@ class ModFSAppState extends State<ModFSApp> {
 
 /// Represents a file or folder record found in the search result matching the query.
 class SearchResult {
+
+  SearchResult({required this.path, required this.size, required this.mtime, required this.isFolder});
   /// The absolute canonical path to the file or directory.
   final String path;
 
@@ -173,8 +175,6 @@ class SearchResult {
 
   /// Indicates if this record represents a directory folder.
   final bool isFolder;
-
-  SearchResult({required this.path, required this.size, required this.mtime, required this.isFolder});
 
   /// Extracts the filename or directory name from the end of the [path].
   String get name => path.split('/').last;
@@ -230,9 +230,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _searchStreamController.add(_searchController.text);
     });
     
-    _searchStreamController.stream.distinct().listen((query) {
-      _performSearch(query);
-    });
+    _searchStreamController.stream.distinct().listen(_performSearch);
   }
 
   Future<void> _initModFS() async {
@@ -241,13 +239,13 @@ class _SearchScreenState extends State<SearchScreen> {
       final defaultHome = Platform.environment['HOME'] ?? '/';
       _includes = prefs.getStringList('include_paths') ?? [defaultHome];
       
-      List<String> defaultExcs = ['/proc', '/sys', '/dev', '/run', '/var/run', '/tmp', '/var/tmp', '$defaultHome/.gvfs', '$defaultHome/.cache', '/var/lib/docker'];
-      List<String> savedExcs = prefs.getStringList('exclude_paths') ?? [];
+      final defaultExcs = <String>['/proc', '/sys', '/dev', '/run', '/var/run', '/tmp', '/var/tmp', '$defaultHome/.gvfs', '$defaultHome/.cache', '/var/lib/docker'];
+      final savedExcs = prefs.getStringList('exclude_paths') ?? [];
       // If excludes have been configured, ensure required default system exclusions are also present.
       if (savedExcs.isNotEmpty) {
-        bool changed = false;
+        var changed = false;
         // Verify that critical runtime and system mounts are in the exclusion list.
-        for (var d in defaultExcs) {
+        for (final d in defaultExcs) {
           if (!savedExcs.contains(d)) {
             savedExcs.add(d);
             changed = true;
@@ -273,7 +271,7 @@ class _SearchScreenState extends State<SearchScreen> {
       modfs = ModFSBindings(getLibraryPath());
       _loadOrScanDB();
     } catch (error) {
-      AppLogger.log("ModFS Init Error: $error");
+      AppLogger.log('ModFS Init Error: $error');
     }
   }
 
@@ -301,7 +299,7 @@ class _SearchScreenState extends State<SearchScreen> {
          }
       }
     } catch (error) {
-      AppLogger.log("Native Error: $error");
+      AppLogger.log('Native Error: $error');
     }
     
     // Check if widget state is still active in the widget tree before updating state.
@@ -329,18 +327,18 @@ class _SearchScreenState extends State<SearchScreen> {
     final resPtr = modfs.search(dbPtr!, query);
     // Ensure search results pointer from native engine is valid before parsing results.
     if (resPtr != nullptr) {
-      final List<SearchResult> newRes = [];
+      final newRes = <SearchResult>[];
       // Guarantee the native search-result handle is released even if parsing
       // throws — otherwise every failed parse leaks a result set (P2-7).
       try {
         final foldersCount = modfs.getFoldersCount(resPtr);
         final filesCount = modfs.getFilesCount(resPtr);
 
-        final int folderLimit = foldersCount > 200 ? 200 : foldersCount;
-        final int fileLimit = filesCount > 500 ? 500 : filesCount;
+        final folderLimit = foldersCount > 200 ? 200 : foldersCount;
+        final fileLimit = filesCount > 500 ? 500 : filesCount;
 
         // Extract each folder item path and construct the search result object.
-        for (int index = 0; index < folderLimit; index++) {
+        for (var index = 0; index < folderLimit; index++) {
           final path = modfs.getFolderPath(resPtr, index);
           // Verify folder path returned from native FFI is non-null.
           if (path != null) {
@@ -348,7 +346,7 @@ class _SearchScreenState extends State<SearchScreen> {
           }
         }
         // Extract each file item path/attributes and construct the search result object.
-        for (int fileIndex = 0; fileIndex < fileLimit; fileIndex++) {
+        for (var fileIndex = 0; fileIndex < fileLimit; fileIndex++) {
           final path = modfs.getFilePath(resPtr, fileIndex);
           // Verify file path returned from native FFI is non-null.
           if (path != null) {
@@ -368,7 +366,7 @@ class _SearchScreenState extends State<SearchScreen> {
     // macOS opener (the supported platform); fall back to xdg-open elsewhere.
     final opener = Platform.isMacOS ? 'open' : 'xdg-open';
     Process.run(opener, [path]).catchError((error) {
-      debugPrint("Could not open $path: $error");
+      debugPrint('Could not open $path: $error');
       return ProcessResult(0, 1, '', 'Failed to launch');
     });
   }
@@ -407,9 +405,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   String _formatSize(int bytes) {
     if (bytes == 0) return '';
-    double size = bytes.toDouble();
-    List<String> suffix = ['B', 'KB', 'MB', 'GB', 'TB'];
-    int unitIndex = 0;
+    var size = bytes.toDouble();
+    final suffix = <String>['B', 'KB', 'MB', 'GB', 'TB'];
+    var unitIndex = 0;
     // Scale byte count size down by divisions of 1024 until it fits a human-readable suffix unit.
     while (size > 1024 && unitIndex < suffix.length - 1) {
       size /= 1024;
@@ -456,7 +454,7 @@ class _SearchScreenState extends State<SearchScreen> {
                          ),
                          const SizedBox(width: 10),
                          Text(
-                           "Indexing Database... This might take a moment", 
+                           'Indexing Database... This might take a moment', 
                            style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)
                          ),
                        ],
@@ -470,14 +468,14 @@ class _SearchScreenState extends State<SearchScreen> {
                        children: [
                          Text(
                            (_totalFiles == 0 && _totalFolders == 0)
-                               ? "Create your Index to Search first"
-                               : "Indexed: $_totalFiles Files, $_totalFolders Folders",
+                               ? 'Create your Index to Search first'
+                               : 'Indexed: $_totalFiles Files, $_totalFolders Folders',
                            style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12)
                          ),
                          TextButton.icon(
                            onPressed: _rebuildDatabase,
                            icon: const Icon(Icons.refresh, size: 14, color: Color(0xFF00D1FF)),
-                           label: const Text("Rebuild DB", style: TextStyle(color: Color(0xFF00D1FF), fontSize: 12)),
+                           label: const Text('Rebuild DB', style: TextStyle(color: Color(0xFF00D1FF), fontSize: 12)),
                          )
                        ],
                      ),
@@ -539,7 +537,7 @@ class _SearchScreenState extends State<SearchScreen> {
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
               borderRadius: BorderRadius.circular(16),
@@ -564,7 +562,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildResultsList(bool isDark) {
     if (_results.isEmpty) return const SizedBox.shrink();
-    final double fontSize = ModFSApp.of(context)!.fontSize;
+    final fontSize = ModFSApp.of(context)!.fontSize;
 
     return Container(
       margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24, top: 4),
@@ -630,7 +628,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     const SizedBox(width: 12),
                     if (!res.isFolder)
                       Expanded(
-                        flex: 1,
                         child: Text(
                           _formatSize(res.size),
                           textAlign: TextAlign.right,
@@ -650,6 +647,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
 /// A configuration page where user can customize application appearance preferences and directories.
 class SettingsScreen extends StatefulWidget {
+  
+  const SettingsScreen({required this.includes, required this.excludes, required this.onPathsUpdated, super.key});
   /// The list of target folders currently configured for search scans.
   final List<String> includes;
 
@@ -658,8 +657,6 @@ class SettingsScreen extends StatefulWidget {
 
   /// Callback function triggered when directories are added or removed.
   final Function(List<String>, List<String>) onPathsUpdated;
-  
-  const SettingsScreen({super.key, required this.includes, required this.excludes, required this.onPathsUpdated});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -735,10 +732,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           unselectedLabelColor: isDark ? Colors.white54 : Colors.black54,
           indicatorColor: const Color(0xFF635BFF),
           tabs: const [
-            Tab(text: "Preferences"),
-            Tab(text: "Include Paths"),
-            Tab(text: "Exclude Paths"),
-            Tab(text: "About"),
+            Tab(text: 'Preferences'),
+            Tab(text: 'Include Paths'),
+            Tab(text: 'Exclude Paths'),
+            Tab(text: 'About'),
           ],
         ),
       ),
@@ -756,18 +753,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   Widget _buildPreferencesTab(ModFSAppState appState, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Appearance", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('Appearance', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           ListTile(
-            title: Text("Theme Mode", style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+            title: Text('Theme Mode', style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
             trailing: DropdownButton<ThemeMode>(
               value: appState.themeMode,
               dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
-              onChanged: (ThemeMode? value) {
+              onChanged: (value) {
                 // Ensure dropdown selection value is not null.
                 if (value != null) {
                   appState.updateTheme(value);
@@ -783,12 +780,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
           ),
           const SizedBox(height: 24),
-          Text("Choose a font size", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('Choose a font size', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           DropdownButton<double>(
             value: appState.fontSize,
             dropdownColor: isDark ? const Color(0xFF1C1C24) : Colors.white,
-            onChanged: (double? value) {
+            onChanged: (value) {
               // Ensure font size dropdown selection value is not null.
               if (value != null) {
                 appState.updateFontSize(value);
@@ -797,7 +794,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               }
             },
             items: List.generate(11, (loopIndex) {
-              double value = 8.0 + loopIndex;
+              final value = 8.0 + loopIndex;
               return DropdownMenuItem(value: value, child: Text(value.toInt().toString(), style: TextStyle(color: isDark ? Colors.white : Colors.black87)));
             }),
           )
@@ -819,7 +816,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   Widget _buildPathsTab(String title, String sub, TextEditingController ctrl, VoidCallback onAdd, List<String> list, Function(String) onRemove, bool isDark, {bool isExcluded = false}) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -834,7 +831,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                  controller: ctrl,
                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                  decoration: InputDecoration(
-                    hintText: "Add absolute path (e.g., /home/user)",
+                    hintText: 'Add absolute path (e.g., /home/user)',
                     hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
                     filled: true,
                     fillColor: isDark ? const Color(0xFF1C1C24) : Colors.black.withValues(alpha: 0.05),
@@ -878,23 +875,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   Widget _buildAboutTab(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("About ModFS", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('About ModFS', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text("Version: $appVersion", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
+          Text('Version: $appVersion', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
           const SizedBox(height: 16),
-          Text("ModFS is a modern, high-performance Flutter rebuild of FSearch, the fast file search utility.", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
+          Text('ModFS is a modern, high-performance Flutter rebuild of FSearch, the fast file search utility.', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
           const SizedBox(height: 24),
-          Text("Copyright & Licensing", style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('Copyright & Licensing', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          Text("ModFS Copyright (C) Chuck Talk\nOriginal FSearch Copyright (C) Christian Boxdörfer", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
+          Text('ModFS Copyright (C) Chuck Talk\nOriginal FSearch Copyright (C) Christian Boxdörfer', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
           const SizedBox(height: 12),
-          Text("ModFS is distributed under the GNU General Public License (GPL) Version 2, maintaining full compliance with the original FSearch licensing terms.", style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13, height: 1.5)),
+          Text('ModFS is distributed under the GNU General Public License (GPL) Version 2, maintaining full compliance with the original FSearch licensing terms.', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13, height: 1.5)),
           const SizedBox(height: 16),
-          SelectableText("Source code is available at: https://github.com/TaliskerMan/ModFS", style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
+          SelectableText('Source code is available at: https://github.com/TaliskerMan/ModFS', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
         ],
       ),
     );

@@ -1,8 +1,22 @@
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
-typedef ModfsDbNewCNode = Pointer<Void> Function(Pointer<Pointer<Utf8>>, Int32, Pointer<Pointer<Utf8>>, Int32, Bool);
-typedef ModfsDbNewDart = Pointer<Void> Function(Pointer<Pointer<Utf8>>, int, Pointer<Pointer<Utf8>>, int, bool);
+typedef ModfsDbNewCNode =
+    Pointer<Void> Function(
+      Pointer<Pointer<Utf8>>,
+      Int32,
+      Pointer<Pointer<Utf8>>,
+      Int32,
+      Bool,
+    );
+typedef ModfsDbNewDart =
+    Pointer<Void> Function(
+      Pointer<Pointer<Utf8>>,
+      int,
+      Pointer<Pointer<Utf8>>,
+      int,
+      bool,
+    );
 
 typedef ModfsDbScanCNode = Bool Function(Pointer<Void>);
 typedef ModfsDbScanDart = bool Function(Pointer<Void>);
@@ -12,8 +26,12 @@ void main() async {
   final lib = DynamicLibrary.open('./src/libmodfs_core.dylib');
   // print('Lib loaded.');
 
-  final dbNew = lib.lookupFunction<ModfsDbNewCNode, ModfsDbNewDart>('modfs_db_new');
-  final dbScan = lib.lookupFunction<ModfsDbScanCNode, ModfsDbScanDart>('modfs_db_scan');
+  final dbNew = lib.lookupFunction<ModfsDbNewCNode, ModfsDbNewDart>(
+    'modfs_db_new',
+  );
+  final dbScan = lib.lookupFunction<ModfsDbScanCNode, ModfsDbScanDart>(
+    'modfs_db_scan',
+  );
 
   // print('Allocating includes...');
   final incPath = '/'.toNativeUtf8();

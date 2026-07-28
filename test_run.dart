@@ -1,16 +1,19 @@
 import 'dart:ffi';
-import 'lib/ffi.dart';
 import 'dart:isolate';
+
+import 'lib/ffi.dart';
 
 void main() async {
   // print("Main: Starting.");
-  List<String> includes = ['/'];
-  List<String> excludes = [];
-  bool shouldScan = true;
-  String dbPath = '/home/freecode/.local/share/modfs/database.fsearch';
+  final includes = <String>['/'];
+  final excludes = <String>[];
+  const shouldScan = true;
+  const dbPath = '/home/freecode/.local/share/modfs/database.fsearch';
 
   // print("Main: Opening .so & Creating DB");
-  final modfs = ModFSBindings('/home/freecode/antigrav/ModFS/src/libmodfs_core.so');
+  final modfs = ModFSBindings(
+    '/home/freecode/antigrav/ModFS/src/libmodfs_core.so',
+  );
   final dbPtr = modfs.createDatabase(includes, excludes, false);
 
   // print("Main: Launching isolate...");
@@ -18,18 +21,20 @@ void main() async {
     return _processDB([dbPtr.address, shouldScan, dbPath]);
   });
   // print("Main: Returned from isolate.");
-  
+
   modfs.freeDatabase(dbPtr);
 }
 
 void _processDB(List<dynamic> args) {
-  int dbAddress = args[0] as int;
-  bool shouldScan = args[1] as bool;
-  String dbPath = args[2] as String;
-  
-  final bgModfs = ModFSBindings('/home/freecode/antigrav/ModFS/src/libmodfs_core.so');
+  final dbAddress = args[0] as int;
+  final shouldScan = args[1] as bool;
+  final dbPath = args[2] as String;
+
+  final bgModfs = ModFSBindings(
+    '/home/freecode/antigrav/ModFS/src/libmodfs_core.so',
+  );
   final bgDbPtr = Pointer<Void>.fromAddress(dbAddress);
-  
+
   if (shouldScan) {
     // print("Isolate: Scanning...");
     bgModfs.scanDatabase(bgDbPtr);
