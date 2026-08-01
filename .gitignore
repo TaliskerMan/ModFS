@@ -183,3 +183,4 @@ ModFS_vulnerability_report.txt
 /debian/*.substvars
 
 .DS_Store
+sonar-project.properties
