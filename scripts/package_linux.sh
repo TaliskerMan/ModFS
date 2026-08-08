@@ -81,6 +81,30 @@ $FLUTTER_BIN pub deps > Audit/SBOM_ModFS_Linux.txt
 echo -e "\n=== C Backend Library Dependencies ===" >> Audit/SBOM_ModFS_Linux.txt
 ldd src/libmodfs_core.so >> Audit/SBOM_ModFS_Linux.txt || true
 
+SYFT_BIN="syft"
+if ! command -v syft &> /dev/null; then
+    if [ -f "${HOME}/.local/bin/syft" ]; then
+        SYFT_BIN="${HOME}/.local/bin/syft"
+    fi
+fi
+if command -v "${SYFT_BIN}" &> /dev/null; then
+    "${SYFT_BIN}" dir:. \
+        --exclude ./venv \
+        --exclude ./android \
+        --exclude ./ios \
+        --exclude ./macos \
+        --exclude ./windows \
+        --exclude ./build \
+        --exclude ./build_c \
+        --exclude ./packaging_output \
+        --exclude ./dist \
+        --exclude ./plan \
+        --exclude ./.dart_tool \
+        -o cyclonedx-json > Audit/SBOM-Linux.json
+    cp Audit/SBOM-Linux.json Audit/SBOM-Linux
+    cp Audit/SBOM-Linux.json Audit/sbom.json
+fi
+
 echo "==> 5. Creating DEBIAN Control File ..."
 cat <<EOF > "$DEB_DIR/DEBIAN/control"
 Package: $APP_NAME
@@ -118,6 +142,9 @@ cp "linbld/SHA512SUMS" "${NOBUILDS_DIR}/" || true
 cp "linbld/chuck_pubkey.asc" "${NOBUILDS_DIR}/" || true
 cp LICENSE "${NOBUILDS_DIR}/"
 cp README.md "${NOBUILDS_DIR}/"
+cp Audit/SBOM-Linux.json "${NOBUILDS_DIR}/" || true
+cp Audit/SBOM-Linux "${NOBUILDS_DIR}/" || true
+cp Audit/sbom.json "${NOBUILDS_DIR}/" || true
 cp Audit/SBOM_ModFS_Linux.txt "${NOBUILDS_DIR}/" || true
 
 # Generate source code archive
