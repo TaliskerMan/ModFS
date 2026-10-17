@@ -384,7 +384,16 @@ merge_sorted(GArray *merge_me, DynamicArrayCompareDataFunc comp_func, GCancellab
         }
     }
 
-    return merge_sorted(merged_data, comp_func, cancellable);
+    // ModFS fix (2026-10-16): each merge level allocates a new context array;
+    // the intermediate ones were never freed (found with LeakSanitizer during
+    // the macOS release work). Their contents were freed by the next level
+    // above, so only the array itself is released here. The final result and
+    // the caller's original array are still owned by the caller.
+    GArray *result = merge_sorted(merged_data, comp_func, cancellable);
+    if (result != merged_data) {
+        g_array_free(merged_data, TRUE);
+    }
+    return result;
 }
 
 static int

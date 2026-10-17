@@ -2,6 +2,9 @@
 Makefile.in
 /build
 /build*
+# build_macos.sh is the release build script and must be in the repository
+# (GPL corresponding source); /build* above would otherwise exclude it.
+!/build_macos.sh
 /builddir
 /Makefile
 /data/Makefile
@@ -184,3 +187,6 @@ ModFS_vulnerability_report.txt
 
 .DS_Store
 sonar-project.properties
+
+# SonarQube scanner working files
+/.scannerwork/

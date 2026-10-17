@@ -1,0 +1,23 @@
+[
+  {
+    "name": "PCRE2",
+    "version": "10.49",
+    "url": "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.49/pcre2-10.49.tar.bz2",
+    "sha256": "53c156e1ba416a20da8e65395daa132da0d80e76910424caca3fcdae7831d384",
+    "license": "BSD-3-Clause (with PCRE2 exception)"
+  },
+  {
+    "name": "ICU",
+    "version": "78.3",
+    "url": "https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-sources.tgz",
+    "sha256": "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0",
+    "license": "Unicode-3.0"
+  },
+  {
+    "name": "GLib",
+    "version": "2.90.1",
+    "url": "https://download.gnome.org/sources/glib/2.90/glib-2.90.1.tar.xz",
+    "sha256": "93c941aa17d5eb1d53fe838365f29a8b4e539c222a256d974ec8f30fc413e396",
+    "license": "LGPL-2.1-or-later"
+  }
+]

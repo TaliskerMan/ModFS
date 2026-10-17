@@ -1,6 +1,3 @@
-// Auto-incremented to version 1.0.3+32 for build release on 2026-07-20 (Rule_017)
-// Auto-incremented to version 1.0.2+31 for build release on 2026-07-20 (Rule_017)
-// Auto-incremented to version 1.0.1+30 for build release on 2026-07-20 (Rule_017)
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
@@ -8,8 +5,12 @@ import 'dart:isolate';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:modfs/ffi.dart';
 import 'package:modfs/logger.dart';
+import 'package:modfs/paths.dart';
+import 'package:modfs/search_help.dart';
+import 'package:modfs/search_summary.dart';
 import 'package:modfs/version.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,8 +50,6 @@ String getLibraryPath() {
     // Next to the executable (e.g. Linux .deb install layout).
     '$exeDir/$libraryName',
     '$exeDir/lib/$libraryName',
-    // Linux packaged install prefix.
-    '/opt/modfs/lib/$libraryName',
     // Local development build tree (relative to CWD).
     'src/$libraryName',
   ];
@@ -187,21 +186,40 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
+/// Outcome of a background index task.
+enum IndexTaskResult {
+  /// Scanned and saved, or loaded, successfully.
+  ok,
+
+  /// The scan failed (for example, no folders to index).
+  scanFailed,
+
+  /// The scan worked but the index couldn't be written to disk.
+  saveFailed,
+
+  /// The saved index couldn't be read.
+  loadFailed,
+}
+
 /// Helper function to build a background task closure executed inside an Isolate.
 ///
 /// Prevents main UI thread starvation when loading or scanning the large index.
-Future<void> Function() _buildIsolateTask(String libPath, int dbAddr, String dbPath, bool forceScan) {
+/// Returns the [IndexTaskResult] index so failures reach the user instead of
+/// being dropped.
+Future<int> Function() _buildIsolateTask(String libPath, int dbAddr, String dbPath, bool forceScan) {
   // Returns the async closure to execute inside a background worker.
   return () async {
     final isolateModfs = ModFSBindings(libPath);
     final ptr = Pointer<Void>.fromAddress(dbAddr);
     // Scan and write DB to disk if requested, or load cached DB from disk.
     if (forceScan) {
-      isolateModfs.scanDatabase(ptr);
-      isolateModfs.saveDatabase(ptr, dbPath);
-    } else {
-      isolateModfs.loadDatabase(ptr, dbPath);
+      if (!isolateModfs.scanDatabase(ptr)) return IndexTaskResult.scanFailed.index;
+      if (!isolateModfs.saveDatabase(ptr, dbPath)) return IndexTaskResult.saveFailed.index;
+      return IndexTaskResult.ok.index;
     }
+    return isolateModfs.loadDatabase(ptr, dbPath)
+        ? IndexTaskResult.ok.index
+        : IndexTaskResult.loadFailed.index;
   };
 }
 
@@ -217,6 +235,15 @@ class _SearchScreenState extends State<SearchScreen> {
   int _totalFiles = 0;
   int _totalFolders = 0;
   String _dbPath = '';
+
+  // A rebuild requested while one is running is queued, never started in
+  // parallel: starting one frees the index the running scan is still using.
+  bool _rebuildPending = false;
+  bool _disposed = false;
+  bool _pathsChanged = false;
+  String? _statusMessage;
+  String? _truncation;
+  DateTime? _indexTime;
   
   List<String> _includes = ['/'];
   List<String> _excludes = [];
@@ -239,7 +266,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final defaultHome = Platform.environment['HOME'] ?? '/';
       _includes = prefs.getStringList('include_paths') ?? [defaultHome];
       
-      final defaultExcs = <String>['/proc', '/sys', '/dev', '/run', '/var/run', '/tmp', '/var/tmp', '$defaultHome/.gvfs', '$defaultHome/.cache', '/var/lib/docker'];
+      final defaultExcs = defaultExcludes(defaultHome);
       final savedExcs = prefs.getStringList('exclude_paths') ?? [];
       // If excludes have been configured, ensure required default system exclusions are also present.
       if (savedExcs.isNotEmpty) {
@@ -276,13 +303,26 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _loadOrScanDB({bool forceScan = false}) async {
-    setState(() => _isScanning = true);
-    
+    // Never start a second scan while one runs: it would free the index the
+    // running scan is still writing to. Queue one rebuild instead.
+    if (_isScanning) {
+      if (forceScan) _rebuildPending = true;
+      return;
+    }
+    setState(() {
+      _isScanning = true;
+      _statusMessage = null;
+    });
+
     // Free existing database instance in memory before creating/loading a new one.
     if (dbPtr != null) {
       modfs.freeDatabase(dbPtr!);
       dbPtr = null;
     }
+
+    final missing = forceScan ? missingIncludes(_includes) : const <String>[];
+    var result = IndexTaskResult.ok;
+    var loadedFromDisk = false;
 
     // Use Isolate.run to execute intensive FFI routines in a background thread to prevent UI freezing
     try {
@@ -292,28 +332,68 @@ class _SearchScreenState extends State<SearchScreen> {
       final libPathLocal = getLibraryPath();
       // Choose whether to perform a fresh disk scan or load from cached DB.
       if (forceScan) {
-         await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, true));
-      } else {
-         if (File(_dbPath).existsSync()) {
-            await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, false));
-         }
+        result = IndexTaskResult.values[
+            await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, true))];
+      } else if (File(_dbPath).existsSync()) {
+        result = IndexTaskResult.values[
+            await Isolate.run(_buildIsolateTask(libPathLocal, dbAddr, dbPathLocal, false))];
+        loadedFromDisk = true;
       }
     } catch (error) {
       AppLogger.log('Native Error: $error');
+      result = forceScan ? IndexTaskResult.scanFailed : IndexTaskResult.loadFailed;
     }
-    
-    // Check if widget state is still active in the widget tree before updating state.
-    if (mounted) {
-      // Update local state variables to reflect loading is complete and count files.
-      setState(() {
-        _isScanning = false;
-        // Verify database ptr is valid before querying the total number of files/folders.
-        if (dbPtr != null) {
-           _totalFiles = modfs.getNumFiles(dbPtr!);
-           _totalFolders = modfs.getNumFolders(dbPtr!);
+
+    if (result != IndexTaskResult.ok) {
+      AppLogger.log('Index task result: ${result.name}');
+    }
+
+    // The screen was closed during the scan: free the index only now that
+    // nothing is using it.
+    if (_disposed) {
+      if (dbPtr != null) modfs.freeDatabase(dbPtr!);
+      dbPtr = null;
+      return;
+    }
+
+    String? message;
+    switch (result) {
+      case IndexTaskResult.ok:
+        if (missing.isNotEmpty) {
+          message = "Skipped folders that don't exist: ${missing.join(', ')}";
         }
-      });
-      _performSearch(_searchController.text);
+      case IndexTaskResult.scanFailed:
+        message = _includes.isEmpty
+            ? 'Nothing to index: add a folder under Settings → Include Paths.'
+            : 'Indexing failed. See modfs.log for details.';
+      case IndexTaskResult.saveFailed:
+        message = "The index was built but couldn't be saved, so it will be "
+            'rebuilt next time. See modfs.log for details.';
+      case IndexTaskResult.loadFailed:
+        message = "The saved index couldn't be read. Click Rebuild DB.";
+    }
+
+    final dbFile = File(_dbPath);
+    final indexTime = result == IndexTaskResult.ok && (forceScan || loadedFromDisk) && dbFile.existsSync()
+        ? dbFile.lastModifiedSync()
+        : null;
+
+    // Update local state variables to reflect loading is complete and count files.
+    setState(() {
+      _isScanning = false;
+      _statusMessage = message;
+      _indexTime = indexTime;
+      // Verify database ptr is valid before querying the total number of files/folders.
+      if (dbPtr != null) {
+        _totalFiles = modfs.getNumFiles(dbPtr!);
+        _totalFolders = modfs.getNumFolders(dbPtr!);
+      }
+    });
+    _performSearch(_searchController.text);
+
+    if (_rebuildPending) {
+      _rebuildPending = false;
+      unawaited(_loadOrScanDB(forceScan: true));
     }
   }
 
@@ -334,8 +414,9 @@ class _SearchScreenState extends State<SearchScreen> {
         final foldersCount = modfs.getFoldersCount(resPtr);
         final filesCount = modfs.getFilesCount(resPtr);
 
-        final folderLimit = foldersCount > 200 ? 200 : foldersCount;
-        final fileLimit = filesCount > 500 ? 500 : filesCount;
+        final folderLimit = foldersCount > kMaxFolders ? kMaxFolders : foldersCount;
+        final fileLimit = filesCount > kMaxFiles ? kMaxFiles : filesCount;
+        _truncation = truncationNotice(folders: foldersCount, files: filesCount);
 
         // Extract each folder item path and construct the search result object.
         for (var index = 0; index < folderLimit; index++) {
@@ -363,7 +444,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _openPath(String path) {
-    // macOS opener (the supported platform); fall back to xdg-open elsewhere.
+    // macOS opener (the supported platform); xdg-open only for development runs on Linux.
     final opener = Platform.isMacOS ? 'open' : 'xdg-open';
     Process.run(opener, [path]).catchError((error) {
       debugPrint('Could not open $path: $error');
@@ -377,26 +458,37 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _openSettings() {
+    final prefs = ModFSApp.of(context)!.prefs;
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => SettingsScreen(
         includes: _includes,
         excludes: _excludes,
+        alwaysExcluded: defaultExcludes(Platform.environment['HOME'] ?? '/'),
         onPathsUpdated: (incs, excs) async {
-          final prefs = ModFSApp.of(context)!.prefs;
           await prefs.setStringList('include_paths', incs);
           await prefs.setStringList('exclude_paths', excs);
-          _includes = incs;
-          _excludes = excs;
-          _rebuildDatabase();
+          _includes = List.of(incs);
+          _excludes = List.of(excs);
+          _pathsChanged = true;
         },
       )),
-    ).then((_) => setState(() {}));
+    ).then((_) {
+      if (!mounted) return;
+      setState(() {});
+      // Rebuild once, after Settings closes, rather than on every edit.
+      if (_pathsChanged) {
+        _pathsChanged = false;
+        _rebuildDatabase();
+      }
+    });
   }
 
   @override
   void dispose() {
-    if (dbPtr != null) modfs.freeDatabase(dbPtr!);
+    _disposed = true;
+    // A running scan still uses the index; it is freed when the scan ends.
+    if (!_isScanning && dbPtr != null) modfs.freeDatabase(dbPtr!);
     _searchStreamController.close();
     _searchController.dispose();
     _scrollController.dispose();
@@ -466,11 +558,14 @@ class _SearchScreenState extends State<SearchScreen> {
                      child: Row(
                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                        children: [
-                         Text(
-                           (_totalFiles == 0 && _totalFolders == 0)
-                               ? 'Create your Index to Search first'
-                               : 'Indexed: $_totalFiles Files, $_totalFolders Folders',
-                           style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12)
+                         Flexible(
+                           child: Text(
+                             (_totalFiles == 0 && _totalFolders == 0)
+                                 ? 'Click Rebuild DB to create the index before searching'
+                                 : 'Indexed: ${formatCount(_totalFiles)} files, ${formatCount(_totalFolders)} folders'
+                                   '${_indexTime == null ? '' : ' · updated ${formatIndexTime(_indexTime!)} (not updated automatically)'}',
+                             style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12)
+                           ),
                          ),
                          TextButton.icon(
                            onPressed: _rebuildDatabase,
@@ -480,6 +575,22 @@ class _SearchScreenState extends State<SearchScreen> {
                        ],
                      ),
                    ),
+                if (_statusMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    child: Text(
+                      _statusMessage!,
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    ),
+                  ),
+                if (_truncation != null && !_isScanning)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    child: Text(
+                      _truncation!,
+                      style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12),
+                    ),
+                  ),
                 Expanded(
                   child: _buildResultsList(isDark),
                 ),
@@ -552,6 +663,11 @@ class _SearchScreenState extends State<SearchScreen> {
                 hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
                 border: InputBorder.none,
                 icon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 24),
+                suffixIcon: IconButton(
+                  tooltip: 'Search syntax',
+                  icon: Icon(Icons.help_outline, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+                  onPressed: () => showSearchHelp(context),
+                ),
               ),
             ),
           ),
@@ -648,12 +764,15 @@ class _SearchScreenState extends State<SearchScreen> {
 /// A configuration page where user can customize application appearance preferences and directories.
 class SettingsScreen extends StatefulWidget {
   
-  const SettingsScreen({required this.includes, required this.excludes, required this.onPathsUpdated, super.key});
+  const SettingsScreen({required this.includes, required this.excludes, required this.alwaysExcluded, required this.onPathsUpdated, super.key});
   /// The list of target folders currently configured for search scans.
   final List<String> includes;
 
   /// The list of directories to exclude from search scans.
   final List<String> excludes;
+
+  /// System folders that are always excluded and can't be removed.
+  final List<String> alwaysExcluded;
 
   /// Callback function triggered when directories are added or removed.
   final Function(List<String>, List<String>) onPathsUpdated;
@@ -668,6 +787,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   final _includeController = TextEditingController();
   final _excludeController = TextEditingController();
   late TabController _tabController;
+  String? _includeError;
+  String? _excludeError;
 
   @override
   void initState() {
@@ -687,20 +808,22 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   void _addInclude() {
     final txt = _includeController.text.trim();
-    if (txt.isNotEmpty && !_localIncludes.contains(txt)) {
-      setState(() => _localIncludes.add(txt));
-      _includeController.clear();
-      widget.onPathsUpdated(_localIncludes, _localExcludes);
-    }
+    final error = validatePathToAdd(txt, _localIncludes, mustExist: true);
+    setState(() => _includeError = error);
+    if (error != null) return;
+    setState(() => _localIncludes.add(txt));
+    _includeController.clear();
+    widget.onPathsUpdated(_localIncludes, _localExcludes);
   }
 
   void _addExclude() {
     final txt = _excludeController.text.trim();
-    if (txt.isNotEmpty && !_localExcludes.contains(txt)) {
-      setState(() => _localExcludes.add(txt));
-      _excludeController.clear();
-      widget.onPathsUpdated(_localIncludes, _localExcludes);
-    }
+    final error = validatePathToAdd(txt, _localExcludes, mustExist: false);
+    setState(() => _excludeError = error);
+    if (error != null) return;
+    setState(() => _localExcludes.add(txt));
+    _excludeController.clear();
+    widget.onPathsUpdated(_localIncludes, _localExcludes);
   }
 
   void _removeInclude(String path) {
@@ -743,8 +866,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         controller: _tabController,
         children: [
           _buildPreferencesTab(modFsApp, isDark),
-          _buildPathsTab('Included Paths', 'Search targets. Triggers rebuild.', _includeController, _addInclude, _localIncludes, _removeInclude, isDark),
-          _buildPathsTab('Excluded Paths', 'Omitted paths. Triggers rebuild. Recommended to keep defaults.', _excludeController, _addExclude, _localExcludes, _removeExclude, isDark, isExcluded: true),
+          _buildPathsTab('Included Paths', 'Folders to index. The index is rebuilt when you close Settings.', _includeController, _addInclude, _localIncludes, _removeInclude, isDark, error: _includeError),
+          _buildPathsTab('Excluded Paths', 'Folders to skip. System folders are always excluded. The index is rebuilt when you close Settings.', _excludeController, _addExclude, _localExcludes, _removeExclude, isDark, isExcluded: true, error: _excludeError),
           _buildAboutTab(isDark),
         ],
       ),
@@ -814,7 +937,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return null;
   }
 
-  Widget _buildPathsTab(String title, String sub, TextEditingController ctrl, VoidCallback onAdd, List<String> list, Function(String) onRemove, bool isDark, {bool isExcluded = false}) {
+  Widget _buildPathsTab(String title, String sub, TextEditingController ctrl, VoidCallback onAdd, List<String> list, Function(String) onRemove, bool isDark, {bool isExcluded = false, String? error}) {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -831,8 +954,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                  controller: ctrl,
                  style: TextStyle(color: isDark ? Colors.white : Colors.black),
                  decoration: InputDecoration(
-                    hintText: 'Add absolute path (e.g., /home/user)',
+                    hintText: 'Add a full path (e.g. /Users/you/Documents)',
                     hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                    errorText: error,
                     filled: true,
                     fillColor: isDark ? const Color(0xFF1C1C24) : Colors.black.withValues(alpha: 0.05),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -854,16 +978,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             child: ListView.builder(
               itemCount: list.length,
               itemBuilder: (context, index) {
+                final path = list[index];
+                final locked = isExcluded && widget.alwaysExcluded.contains(path);
+                final reason = isExcluded ? _getExclusionReason(path) : null;
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: Text(list[index], style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
-                  subtitle: (isExcluded && _getExclusionReason(list[index]) != null)
-                      ? Text(_getExclusionReason(list[index])!, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12))
+                  title: Text(path, style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
+                  subtitle: (reason != null || locked)
+                      ? Text(
+                          [?reason, if (locked) 'Always excluded'].join(' · '),
+                          style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 12))
                       : null,
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.redAccent),
-                    onPressed: () => onRemove(list[index])
-                  ),
+                  trailing: locked
+                      ? Icon(Icons.lock_outline, size: 18, color: isDark ? Colors.white38 : Colors.black38)
+                      : IconButton(
+                          tooltip: 'Remove',
+                          icon: const Icon(Icons.close, color: Colors.redAccent),
+                          onPressed: () => onRemove(path),
+                        ),
                 );
               }
             ),
@@ -873,25 +1005,87 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
+  /// Shows the full GPLv3 text bundled with the app (CP-AboutPage).
+  Future<void> _showLicense() async {
+    final text = await rootBundle.loadString('LICENSE');
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('GNU General Public License, version 3'),
+        content: SizedBox(
+          width: 640,
+          height: 480,
+          child: SingleChildScrollView(
+            child: SelectableText(text, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  // Rewritten 2026-10-16 for CP-AboutPage: the original work's copyright and
+  // licence come first, then the fork's, the original developers are credited
+  // as contributors, and the licence itself can be read in the app.
   Widget _buildAboutTab(bool isDark) {
-    return Padding(
+    final heading = TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold);
+    final body = TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14, height: 1.4);
+    final muted = TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13, height: 1.4);
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('About ModFS', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text('About ModFS', style: heading),
           const SizedBox(height: 8),
-          Text('Version: $appVersion', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
-          const SizedBox(height: 16),
-          Text('ModFS is a modern, high-performance Flutter rebuild of FSearch, the fast file search utility.', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
+          Text('Version $appVersion · macOS (Apple Silicon)', style: body),
+          const SizedBox(height: 8),
+          Text('ModFS is a macOS front end for FSearch, the fast file search engine.', style: body),
           const SizedBox(height: 24),
-          Text('Copyright & Licensing', style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Text('ModFS Copyright (C) Chuck Talk\nOriginal FSearch Copyright (C) Christian Boxdörfer', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
+          Text('Original work: FSearch', style: heading),
+          const SizedBox(height: 8),
+          Text(
+            'Copyright © Christian Boxdörfer.\n'
+            'Licensed under the GNU General Public License, version 2 or (at your option) any later version.',
+            style: body,
+          ),
+          const SizedBox(height: 24),
+          Text('This fork: ModFS', style: heading),
+          const SizedBox(height: 8),
+          Text(
+            'Copyright © 2026 Chuck Talk (chuck@nordheim.online).\n'
+            "Distributed under the GNU General Public License, version 3 or (at your option) any later version, "
+            "as FSearch's licence permits. The whole application is covered by this licence.",
+            style: body,
+          ),
           const SizedBox(height: 12),
-          Text('ModFS is distributed under the GNU General Public License (GPL) Version 2, maintaining full compliance with the original FSearch licensing terms.', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13, height: 1.5)),
+          Text(
+            'Contributors: Christian Boxdörfer and the FSearch contributors (github.com/cboxdoerfer/fsearch).',
+            style: body,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'ModFS also includes the GLib, PCRE2, ICU and gettext libraries. Their licences are in '
+            'ModFS.app/Contents/Resources/ThirdPartyLicenses.',
+            style: muted,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'This program comes with ABSOLUTELY NO WARRANTY. It is free software, and you are welcome to '
+            'redistribute it under the conditions of the GPL.',
+            style: muted,
+          ),
           const SizedBox(height: 16),
-          SelectableText('Source code is available at: https://github.com/TaliskerMan/ModFS', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
+          SelectableText('Source code: https://github.com/TaliskerMan/ModFS', style: body),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _showLicense,
+            icon: const Icon(Icons.description_outlined, size: 18),
+            label: const Text('View licence (GPLv3)'),
+          ),
         ],
       ),
     );

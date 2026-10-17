@@ -62,6 +62,12 @@ test_query(QueryTest *t) {
     fsearch_query_match_data_set_entry(match_data, entry);
 
     const bool found = fsearch_query_match(q, match_data);
+    if (found) {
+        // ModFS (2026-10-16): also run the highlight code on every match, so
+        // the Pango-free stand-ins (MODFS_NO_PANGO) are exercised under the
+        // same queries; it must neither crash nor leak.
+        fsearch_query_highlight(q, match_data);
+    }
     g_clear_pointer(&manager, fsearch_filter_manager_free);
     g_clear_pointer(&q, fsearch_query_unref);
     g_clear_pointer(&match_data, fsearch_query_match_data_free);

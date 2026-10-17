@@ -1,0 +1,202 @@
+✗ 4/4 detected Gradle manifests did not return dependencies. They may have errored or were not included as part of a multi-project build. You may need to scan them individually with --file=path/to/file. Run with `-d` for more info.
+/Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/android/build.gradle:
+  Gradle Error (short):
+
+
+===== DEBUG INFORMATION START =====
+[COULD NOT RUN gradle -v]
+
+>>> command: gradle snykResolvedDepsJson -q --project-dir /Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/android --no-daemon -Dorg.gradle.parallel= -Dorg.gradle.console=plain -I /private/var/folders/ns/kgnb2ty54vb4ctw1l78y7xvc0000gn/T/tmp-54408-0AlRgwsL3EFO--init.gradle
+>>> exit code: -2
+>>> stdout:
+
+>>> stderr:
+Error: spawn gradle ENOENT
+
+===== DEBUG INFORMATION END =====
+
+Error running Gradle dependency analysis.
+
+Please ensure you are calling the `snyk` command with correct arguments.
+If the problem persists, contact support@snyk.io, providing the full error
+message from above, starting with ===== DEBUG INFORMATION START =====.
+/Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/example/android/build.gradle:
+  Gradle Error (short):
+
+
+===== DEBUG INFORMATION START =====
+[COULD NOT RUN gradle -v]
+
+>>> command: gradle snykResolvedDepsJson -q --project-dir /Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/example/android --no-daemon -Dorg.gradle.parallel= -Dorg.gradle.console=plain -I /private/var/folders/ns/kgnb2ty54vb4ctw1l78y7xvc0000gn/T/tmp-54408-wROkXbIQCrUV--init.gradle
+>>> exit code: -2
+>>> stdout:
+
+>>> stderr:
+Error: spawn gradle ENOENT
+
+===== DEBUG INFORMATION END =====
+
+Error running Gradle dependency analysis.
+
+Please ensure you are calling the `snyk` command with correct arguments.
+If the problem persists, contact support@snyk.io, providing the full error
+message from above, starting with ===== DEBUG INFORMATION START =====.
+/Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/example/macos/Podfile:
+  Could not find lockfile "Podfile.lock"! This might be resolved by running `pod install`.
+/Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/java/build.gradle.kts:
+  Gradle Error (short):
+> Unsupported class file major version 69
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+===== DEBUG INFORMATION START =====
+
+------------------------------------------------------------
+Gradle 8.7
+------------------------------------------------------------
+
+Build time:   2024-03-22 15:52:46 UTC
+Revision:     650af14d7653aa949fce5e886e685efc9cf97c10
+
+Kotlin:       1.9.22
+Groovy:       3.0.17
+Ant:          Apache Ant(TM) version 1.10.13 compiled on January 4 2023
+JVM:          25.0.2 (Eclipse Adoptium 25.0.2+10-LTS)
+OS:           Mac OS X 27.0.1 aarch64
+
+
+
+>>> command: /Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/java/gradlew snykResolvedDepsJson -q --project-dir /Users/charlestalk/AntiGravity/ModFS/linux/flutter/ephemeral/.plugin_symlinks/jni/java --no-daemon -Dorg.gradle.parallel= -Dorg.gradle.console=plain -I /private/var/folders/ns/kgnb2ty54vb4ctw1l78y7xvc0000gn/T/tmp-54408-DwN6ypN2dzko--init.gradle --no-configuration-cache
+>>> exit code: 1
+>>> stdout:
+
+>>> stderr:
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/Users/charlestalk/.gradle/wrapper/dists/gradle-8.7-bin/bhs2wmbdwecv87pi65oeuq5iu/gradle-8.7/lib/native-platform-0.22-milestone-25.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+BUG! exception in phase 'semantic analysis' in source unit '_BuildScript_' Unsupported class file major version 69
+> Unsupported class file major version 69
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s
+
+
+===== DEBUG INFORMATION END =====
+
+Error running Gradle dependency analysis.
+
+Please ensure you are calling the `snyk` command with correct arguments.
+If the problem persists, contact support@snyk.io, providing the full error
+message from above, starting with ===== DEBUG INFORMATION START =====.
+/Users/charlestalk/AntiGravity/ModFS/macos/Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/example/ios/Podfile:
+  Could not find lockfile "Podfile.lock"! This might be resolved by running `pod install`.
+/Users/charlestalk/AntiGravity/ModFS/macos/Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/example/macos/Podfile:
+  Could not find lockfile "Podfile.lock"! This might be resolved by running `pod install`.
+✗ 6/11 potential projects failed to get dependencies.
+
+Testing /Users/charlestalk/AntiGravity/ModFS...
+
+Organization:      taliskerman
+Package manager:   cocoapods
+Target file:       macos/Podfile
+Project name:      macos
+Open source:       no
+Project path:      /Users/charlestalk/AntiGravity/ModFS
+Licenses:          enabled
+
+✔ Tested 1 dependencies for known issues, no vulnerable paths found.
+
+Next steps:
+- Run `snyk monitor` to be notified about new related vulnerabilities.
+- Run `snyk test` as part of your CI/test.
+
+-------------------------------------------------------
+
+Testing /Users/charlestalk/AntiGravity/ModFS...
+
+Organization:      taliskerman
+Package manager:   swift
+Target file:       macos/Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin/shared_preferences_foundationPackage.swift
+Project name:      shared_preferences_foundation
+Open source:       no
+Project path:      /Users/charlestalk/AntiGravity/ModFS
+Licenses:          enabled
+
+✔ Tested /Users/charlestalk/AntiGravity/ModFS for known issues, no vulnerable paths found.
+
+Next steps:
+- Run `snyk monitor` to be notified about new related vulnerabilities.
+- Run `snyk test` as part of your CI/test.
+
+-------------------------------------------------------
+
+Testing /Users/charlestalk/AntiGravity/ModFS...
+
+Organization:      taliskerman
+Package manager:   swift
+Target file:       macos/Flutter/ephemeral/Packages/.packages/FlutterFrameworkPackage.swift
+Project name:      FlutterFramework
+Open source:       no
+Project path:      /Users/charlestalk/AntiGravity/ModFS
+Licenses:          enabled
+
+✔ Tested /Users/charlestalk/AntiGravity/ModFS for known issues, no vulnerable paths found.
+
+Next steps:
+- Run `snyk monitor` to be notified about new related vulnerabilities.
+- Run `snyk test` as part of your CI/test.
+
+-------------------------------------------------------
+
+Testing /Users/charlestalk/AntiGravity/ModFS...
+
+Organization:      taliskerman
+Package manager:   swift
+Target file:       macos/Flutter/ephemeral/Packages/.packages/shared_preferences_foundation-2.5.6Package.swift
+Project name:      shared_preferences_foundation
+Open source:       no
+Project path:      /Users/charlestalk/AntiGravity/ModFS
+Licenses:          enabled
+
+✔ Tested /Users/charlestalk/AntiGravity/ModFS for known issues, no vulnerable paths found.
+
+Next steps:
+- Run `snyk monitor` to be notified about new related vulnerabilities.
+- Run `snyk test` as part of your CI/test.
+
+-------------------------------------------------------
+
+Testing /Users/charlestalk/AntiGravity/ModFS...
+
+Organization:      taliskerman
+Package manager:   swift
+Target file:       macos/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackagePackage.swift
+Project name:      FlutterGeneratedPluginSwiftPackage
+Open source:       no
+Project path:      /Users/charlestalk/AntiGravity/ModFS
+Licenses:          enabled
+
+✔ Tested 2 dependencies for known issues, no vulnerable paths found.
+
+Next steps:
+- Run `snyk monitor` to be notified about new related vulnerabilities.
+- Run `snyk test` as part of your CI/test.
+
+
+Tested 5 projects, no vulnerable paths were found.
+
+
+

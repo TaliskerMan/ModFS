@@ -2,6 +2,20 @@
 #include "fsearch_query_node.h"
 #include <string.h>
 
+#ifdef MODFS_NO_PANGO
+// ModFS change (2026-10-16): highlights are a GTK-UI feature ModFS doesn't
+// use; without Pango linked, a plain stand-in attribute is created and then
+// discarded (see fsearch_query_match_data.c and modfs_pango_types.h).
+static inline PangoAttribute *
+modfs_no_pango_attr_weight_new(PangoWeight weight) {
+    (void)weight;
+    // A real (zeroed) attribute, because the matchers below set its
+    // start/end fields; fsearch_query_match_data_add_highlight() frees it.
+    return g_new0(PangoAttribute, 1);
+}
+#define pango_attr_weight_new modfs_no_pango_attr_weight_new
+#endif
+
 uint32_t
 fsearch_query_matcher_false(FsearchQueryNode *node, FsearchQueryMatchData *match_data) {
     return 0;

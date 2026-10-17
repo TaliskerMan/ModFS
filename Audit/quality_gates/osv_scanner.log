@@ -1,0 +1,5 @@
+Starting filesystem walk for root: /
+Scanned /Users/charlestalk/AntiGravity/ModFS/pubspec.lock file and found 61 packages
+End status: 0 dirs visited, 1 inodes visited, 1 Extract calls, 1.879042ms elapsed, 1.88ms wall time
+
+No issues found

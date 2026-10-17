@@ -1,2 +1,8 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
+
+// Apple Silicon only (2026-10-16): the search core and the Homebrew libraries
+// bundled with it are arm64, so an Intel slice could only crash. build_macos.sh
+// also thins any remaining Intel code out of the finished app.
+ARCHS = arm64
+EXCLUDED_ARCHS = x86_64

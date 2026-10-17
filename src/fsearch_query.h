@@ -20,7 +20,7 @@
 
 #include <glib.h>
 #include <gio/gio.h>
-#include <pango/pango.h>
+#include "modfs_pango_types.h" // ModFS: Pango types only when Pango is used (see that file)
 #include <stdbool.h>
 
 #include "fsearch_array.h"

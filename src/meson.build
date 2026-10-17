@@ -34,10 +34,17 @@ if build_machine.system()=='darwin'
     libfsearch_sources+=['strverscmp.c']
 endif
 
+# ModFS change (2026-10-16): the search core doesn't use GTK or Pango. It only
+# mentioned Pango types in FSearch's GUI-only match-highlight API, which ModFS
+# never uses; MODFS_NO_PANGO swaps those for opaque stand-ins
+# (modfs_pango_types.h) and makes the highlight calls no-ops. Linking GTK/Pango
+# dragged GTK, Pango, Cairo, HarfBuzz, FreeType etc. into libmodfs_core, all of
+# which would have had to ship inside the macOS app.
+add_project_arguments('-DMODFS_NO_PANGO', language: 'c')
+
 fsearch_deps = [
     cc.find_library('m', required: true),
     dependency('gio-unix-2.0', version: '>= 2.50'),
-    dependency('gtk+-3.0', version: '>= 3.18'),
     dependency('libpcre2-8', version: '>= 10.21'),
     dependency('icu-uc', version: '>= 3.8'),
 ]

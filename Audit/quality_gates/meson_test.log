@@ -1,0 +1,83 @@
+ninja: Entering directory `/Users/charlestalk/AntiGravity/ModFS/build-native/gates-core'
+[1/37] Compiling C object src/libfsearch.a.p/fsearch_database_index.c.o
+[2/37] Compiling C object src/libfsearch.a.p/fsearch_exclude_path.c.o
+[3/37] Compiling C object src/libfsearch.a.p/fsearch_index.c.o
+[4/37] Compiling C object src/libfsearch.a.p/fsearch_filter.c.o
+[5/37] Compiling C object src/libfsearch.a.p/fsearch_filter_manager.c.o
+[6/37] Compiling C object src/libfsearch.a.p/fsearch_memory_pool.c.o
+[7/37] Compiling C object src/libfsearch.a.p/fsearch_query_match_data.c.o
+[8/37] Compiling C object src/libfsearch.a.p/fsearch_query_lexer.c.o
+../../src/fsearch_query_lexer.c:25:1: warning: unused function 'top_char' [-Wunused-function]
+   25 | top_char(GQueue *stack) {
+      | ^~~~~~~~
+1 warning generated.
+[9/37] Compiling C object src/libfsearch.a.p/fsearch_query_node.c.o
+[10/37] Compiling C object src/libfsearch.a.p/fsearch_query_matchers.c.o
+[11/37] Compiling C object src/libfsearch.a.p/fsearch_config.c.o
+[12/37] Compiling C object src/libfsearch.a.p/fsearch_query.c.o
+[13/37] Compiling C object src/libfsearch.a.p/fsearch_database_entry.c.o
+[14/37] Compiling C object src/libfsearch.a.p/fsearch_database_search.c.o
+[15/37] Compiling C object src/libfsearch.a.p/fsearch_size_utils.c.o
+[16/37] Compiling C object src/libfsearch.a.p/strverscmp.c.o
+[17/37] Compiling C object src/libfsearch.a.p/fsearch_file_utils.c.o
+../../src/fsearch_file_utils.c:332:1: warning: unused function 'launch_uris_ready' [-Wunused-function]
+  332 | launch_uris_ready(GObject *source_object, GAsyncResult *result, gpointer user_data) {
+      | ^~~~~~~~~~~~~~~~~
+1 warning generated.
+[18/37] Compiling C object src/libfsearch.a.p/fsearch_string_utils.c.o
+[19/37] Compiling C object src/libfsearch.a.p/fsearch_thread_pool.c.o
+[20/37] Compiling C object src/libfsearch.a.p/fsearch_array.c.o
+[21/37] Compiling C object src/libfsearch.a.p/fsearch_query_tree.c.o
+[22/37] Compiling C object src/libfsearch.a.p/fsearch_utf.c.o
+[23/37] Compiling C object src/libfsearch.a.p/fsearch_query_parser.c.o
+[24/37] Compiling C object src/libfsearch.a.p/fsearch_time_utils.c.o
+../../src/fsearch_time_utils.c:276:1: warning: unused function 'print_tm' [-Wunused-function]
+  276 | print_tm(struct tm *tm) {
+      | ^~~~~~~~
+1 warning generated.
+[25/37] Compiling C object src/libfsearch.a.p/fsearch_task.c.o
+[26/37] Compiling C object src/libfsearch.a.p/fsearch_database.c.o
+../../src/fsearch_database.c:1092:20: warning: unused variable 'file_block_size_offset' [-Wunused-variable]
+ 1092 |     const uint64_t file_block_size_offset = bytes_written;
+      |                    ^~~~~~~~~~~~~~~~~~~~~~
+../../src/fsearch_database.c:214:1: warning: unused function 'db_update_timestamp' [-Wunused-function]
+  214 | db_update_timestamp(FsearchDatabase *db) {
+      | ^~~~~~~~~~~~~~~~~~~
+../../src/fsearch_database.c:341:1: warning: unused function 'db_load_entry_super_elements' [-Wunused-function]
+  341 | db_load_entry_super_elements(FILE *fp, FsearchDatabaseEntry *entry, GString *previous_entry_name) {
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../../src/fsearch_database.c:420:1: warning: unused function 'db_load_parent_idx' [-Wunused-function]
+  420 | db_load_parent_idx(FILE *fp, uint32_t *parent_idx) {
+      | ^~~~~~~~~~~~~~~~~~
+4 warnings generated.
+[27/37] Compiling C object src/tests/test_time_utils.p/test_time_utils.c.o
+[28/37] Compiling C object src/tests/test_size_utils.p/test_size_utils.c.o
+[29/37] Compiling C object src/tests/test_string_utils.p/test_string_utils.c.o
+[30/37] Linking static target src/libfsearch.a
+[31/37] Compiling C object src/tests/test_array.p/test_array.c.o
+[32/37] Compiling C object src/tests/test_query.p/test_query.c.o
+../../src/tests/test_query.c:80:20: warning: format specifies type 'intmax_t' (aka 'long') but the argument has type 'off_t' (aka 'long long') [-Wformat]
+   76 |         g_printerr("[%s] should%s match [name:%s, size:%jd]\n",
+      |                                                        ~~~
+      |                                                        %lld
+   77 |                    t->needle,
+   78 |                    t->result ? "" : " NOT",
+   79 |                    t->haystack,
+   80 |                    t->size);
+      |                    ^~~~~~~
+1 warning generated.
+[33/37] Linking target src/tests/test_size_utils
+[34/37] Linking target src/tests/test_string_utils
+[35/37] Linking target src/tests/test_time_utils
+[36/37] Linking target src/tests/test_array
+[37/37] Linking target src/tests/test_query
+1/5 modfs:test_size_utils   OK              0.07s
+2/5 modfs:test_string_utils OK              0.07s
+3/5 modfs:test_time_utils   OK              0.07s
+4/5 modfs:test_array        OK              0.08s
+5/5 modfs:test_query        OK              0.08s
+
+Ok:                5   
+Fail:              0   
+
+Full log written to /Users/charlestalk/AntiGravity/ModFS/build-native/gates-core/meson-logs/testlog.txt

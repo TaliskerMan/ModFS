@@ -3,7 +3,7 @@
 
 #define PCRE2_CODE_UNIT_WIDTH 8
 
-#include <pango/pango-attributes.h>
+#include "modfs_pango_types.h" // ModFS: Pango types only when Pango is used (see that file)
 #include <pcre2.h>
 #include <stdbool.h>
 #include <stdint.h>

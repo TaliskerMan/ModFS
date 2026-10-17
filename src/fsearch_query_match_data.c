@@ -6,6 +6,30 @@
 #include "fsearch_query_match_data.h"
 #include "fsearch_utf.h"
 
+#ifdef MODFS_NO_PANGO
+// ModFS change (2026-10-16): ModFS never displays match highlights, so the
+// Pango attribute calls below become no-ops and Pango is not linked into the
+// search core (see src/meson.build). Highlight lists simply stay NULL and the
+// stand-in attributes are freed straight away.
+static inline PangoAttrList *
+modfs_no_pango_attr_list_new(void) {
+    return NULL;
+}
+static inline void
+modfs_no_pango_attr_list_unref(PangoAttrList *list) {
+    (void)list;
+}
+static inline void
+modfs_no_pango_attr_list_change(PangoAttrList *list, PangoAttribute *attribute) {
+    (void)list;
+    // Pango would take ownership of the attribute; with no list, free it.
+    g_free(attribute);
+}
+#define pango_attr_list_new modfs_no_pango_attr_list_new
+#define pango_attr_list_unref modfs_no_pango_attr_list_unref
+#define pango_attr_list_change modfs_no_pango_attr_list_change
+#endif
+
 struct FsearchQueryMatchData {
     FsearchDatabaseEntry *entry;
 

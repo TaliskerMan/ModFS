@@ -1,0 +1,26 @@
+The Meson build system
+Version: 1.12.1
+Source dir: /Users/charlestalk/AntiGravity/ModFS
+Build dir: /Users/charlestalk/AntiGravity/ModFS/build-native/gates-core
+Build type: native build
+Project name: modfs
+Project version: 0.3.alpha0
+C compiler for the host machine: cc (clang 21.0.0 "Apple clang version 21.0.0 (clang-2100.3.34.2)")
+C linker for the host machine: cc ld64 27037.1
+Host machine cpu family: aarch64
+Host machine cpu: aarch64
+Checking for function "malloc_trim" : NO 
+Library m found: YES
+Found pkg-config: YES (/opt/homebrew/bin/pkg-config) 3.0.7
+Run-time dependency gio-unix-2.0 found: YES 2.90.1
+Run-time dependency libpcre2-8 found: YES 10.49
+Run-time dependency icu-uc found: YES 78.3
+Configuring config.h using configuration
+Build targets in project: 7
+
+modfs 0.3.alpha0
+
+  User defined options
+    buildtype: release
+
+Found ninja-1.13.2 at /opt/homebrew/bin/ninja

@@ -4,7 +4,7 @@
 #include "fsearch_database_index.h"
 #include "fsearch_utf.h"
 
-#include <pango/pango-attributes.h>
+#include "modfs_pango_types.h" // ModFS: Pango types only when Pango is used (see that file)
 #include <stdbool.h>
 #include <stdint.h>
 

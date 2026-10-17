@@ -11,4 +11,4 @@ PRODUCT_NAME = modfs
 PRODUCT_BUNDLE_IDENTIFIER = io.github.taliskerman.modfs
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 Chuck Talk and the FSearch authors. Licensed under the GNU GPL v2 or later.
+PRODUCT_COPYRIGHT = Copyright © 2026 Chuck Talk; FSearch © Christian Boxdörfer. Licensed under the GNU GPL v3 or later.

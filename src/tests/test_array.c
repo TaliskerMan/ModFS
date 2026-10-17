@@ -148,6 +148,9 @@ test_single_and_multi_threaded_sort(DynamicArray *array, DynamicArrayCompareData
         g_print("%d.%d / %d.%d\n", v1->major, v1->minor, v2->major, v2->minor);
         g_assert(v1 == v2);
     }
+    // ModFS (2026-10-16): free the copies so LeakSanitizer runs stay clean.
+    g_clear_pointer(&a1, darray_unref);
+    g_clear_pointer(&a2, darray_unref);
 }
 
 static void
@@ -176,6 +179,7 @@ test_sort(void) {
         darray_add_item(array, &versions[i]);
     }
     test_single_and_multi_threaded_sort(array, (DynamicArrayCompareDataFunc)sort_version);
+    g_clear_pointer(&array, darray_unref);
 }
 
 static void

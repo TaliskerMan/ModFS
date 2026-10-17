@@ -1,0 +1,25 @@
+
+Testing /Users/charlestalk/AntiGravity/ModFS ...
+
+        
+💡 Tip
+
+   You are currently viewing results with --severity-threshold applied.
+   To view all issues, remove the --severity-threshold flag            
+                                                                       
+
+╭──────────────────────────────────────────────────────────────╮
+│ Test Summary                                                 │
+│                                                              │
+│   Organization:      taliskerman                             │
+│   Test type:         Static code analysis                    │
+│   Project path:      /Users/charlestalk/AntiGravity/ModFS    │
+│                                                              │
+│   Total issues:   0                                          │
+╰──────────────────────────────────────────────────────────────╯
+    
+💡 Tip
+
+   To view ignored issues, use the --include-ignores option.
+                                                            
+
