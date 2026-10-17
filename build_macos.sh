@@ -336,8 +336,10 @@ cp Audit/bundled_libraries_macos.json Audit/static_libraries_macos.json "$DROP_D
 cp -R "$LICENSES_DIR" "$DROP_DIR/ThirdPartyLicenses"
 # Corresponding source for exactly what was built (tracked and new files,
 # including the version bump), as the GPL requires.
+# --no-mac-metadata / COPYFILE_DISABLE: leave out macOS extended attributes
+# (com.apple.provenance, ACLs), which other systems' tar warns about.
 git ls-files -z --cached --others --exclude-standard \
-    | tar --null -T - -czf "$DROP_DIR/${APP_DISPLAY_NAME}_${base_version}_source.tar.gz"
+    | COPYFILE_DISABLE=1 tar --null --no-mac-metadata -T - -czf "$DROP_DIR/${APP_DISPLAY_NAME}_${base_version}_source.tar.gz"
 python3 scripts/macos/write_security_report.py \
     --version "$new_version" \
     --gates Audit/quality_gates/summary.env \
