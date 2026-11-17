@@ -86,7 +86,7 @@ else
 fi
 
 step "SonarQube ($SONAR_HOST_URL, project $SONAR_PROJECT_KEY)"
-[ -n "${SONAR_TOKEN:-}" ] || gate_failed "SONAR_TOKEN is not set"
+[[ -n "${SONAR_TOKEN:-}" ]] || gate_failed "SONAR_TOKEN is not set"
 # The C sources analysed are ModFS's search core; FSearch's archived GTK UI and
 # its duplicate test_build copy aren't built or shipped, so they're excluded.
 # The token is passed through the environment, never on the command line.

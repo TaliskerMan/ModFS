@@ -4,6 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:modfs/logger.dart';
 import 'package:modfs/paths.dart';
 import 'package:modfs/search_help.dart';
 import 'package:modfs/search_summary.dart';
@@ -89,5 +90,9 @@ void main() {
     final match = RegExp(r'^version:\s*(\S+)', multiLine: true).firstMatch(pubspec);
     expect(match, isNotNull);
     expect(appVersion, match!.group(1));
+  });
+
+  test('AppLogger.sanitize strips CR and LF characters', () {
+    expect(AppLogger.sanitize('hello\r\nworld\nforged'), 'hello  world forged');
   });
 }

@@ -15,6 +15,8 @@ import tempfile
 
 VOID_P = ctypes.c_void_p
 CHAR_P = ctypes.c_char_p
+REPORT_2026_PDF = "projects/report 2026.pdf"
+IMG_0001_JPG = "photos/IMG_0001.jpg"
 
 
 def load(path):
@@ -48,8 +50,8 @@ def load(path):
 def make_tree(root):
     """Create a small folder tree with known names, sizes and types."""
     files = {
-        "projects/report 2026.pdf": 10, "projects/report.docx": 10,
-        "projects/invoice-march.pdf": 10, "photos/IMG_0001.jpg": 10,
+        REPORT_2026_PDF: 10, "projects/report.docx": 10,
+        "projects/invoice-march.pdf": 10, IMG_0001_JPG: 10,
         "photos/IMG_x.jpg": 10, "photos/photo.png": 10, "notes/README": 10,
         "notes/notes.md": 10, "big/huge.bin": 3 * 1024 * 1024,
     }
@@ -79,10 +81,10 @@ def search(lib, db, query, root):
 
 
 EXPECTED = {
-    "report": ["projects/report 2026.pdf", "projects/report.docx"],
-    "ext:pdf": ["projects/invoice-march.pdf", "projects/report 2026.pdf"],
-    "*.jpg": ["photos/IMG_0001.jpg", "photos/IMG_x.jpg"],
-    r"regex:^IMG_[0-9]+\.jpg$": ["photos/IMG_0001.jpg"],
+    "report": [REPORT_2026_PDF, "projects/report.docx"],
+    "ext:pdf": ["projects/invoice-march.pdf", REPORT_2026_PDF],
+    "*.jpg": [IMG_0001_JPG, "photos/IMG_x.jpg"],
+    r"regex:^IMG_[0-9]+\.jpg$": [IMG_0001_JPG],
     "case:README": ["notes/README"],
     "file:notes": ["notes/notes.md"],
     "folder:photos": ["D:photos"],

@@ -1,0 +1,9 @@
+src/gtk_archive/
+src/test_build/
+src/tests/
+linux/
+build/
+build-native/
+.dart_tool/
+Audit/
+test/

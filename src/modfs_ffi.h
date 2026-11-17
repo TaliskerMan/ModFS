@@ -39,10 +39,10 @@ int modfs_search_result_get_folders_count(void* res_ptr);
 int modfs_search_result_get_files_count(void* res_ptr);
 
 // Returns a newly allocated string for the full path of the matched file. MUST BE FREED by modfs_free_string!
-const char* modfs_search_result_get_file_path(void* res_ptr, int index);
+char* modfs_search_result_get_file_path(void* res_ptr, int index);
 
 // Returns a newly allocated string for the full path of the matched folder. MUST BE FREED by modfs_free_string!
-const char* modfs_search_result_get_folder_path(void* res_ptr, int index);
+char* modfs_search_result_get_folder_path(void* res_ptr, int index);
 
 // Returns the file size
 uint64_t modfs_search_result_get_file_size(void* res_ptr, int index);
@@ -54,7 +54,7 @@ uint64_t modfs_search_result_get_file_mtime(void* res_ptr, int index);
 void modfs_search_result_free(void* res_ptr);
 
 // Free strings returned by get_path functions
-void modfs_free_string(const char* str);
+void modfs_free_string(char* str);
 
 #ifdef __cplusplus
 }

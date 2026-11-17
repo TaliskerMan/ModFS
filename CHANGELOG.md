@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.4+39] - 2026-11-16
+### Security & Quality
+- Remediated all SonarQube Cloud vulnerabilities and code smells across Python release scripts (`bundle_dylibs.py`, `write_security_report.py`, `smoke_test_core.py`), Bash build scripts (`build_macos.sh`, `build_deps.sh`, `preflight.sh`, `quality_gates.sh`, `macos_setup.sh`), Swift macOS runner (`AppDelegate.swift`), and C FFI bridge (`modfs_ffi.c` / `modfs_ffi.h`).
+- Added canonical path confinement (`safe_path`) and CLI argument validation in `bundle_dylibs.py` and `write_security_report.py` (`pythonsecurity:S8707`, `pythonsecurity:S8705`), and tightened copied dylib permissions (`0o700`, `python:S2612`).
+- Hardened `AppLogger` with CR/LF log injection sanitization, `0600` file permissions, and 5 MiB log rotation (`CP-Logging`).
+- Added tracked `.sonarcloud.properties`, `sonar-project.properties`, `.sonarlint/connectedMode.json`, `.snyk`, and `.dcignore`.
+
 ## [1.0.4] - 2026-10-16
 ### Fixed
 - **Settings could crash the app.** Every added or removed folder started a

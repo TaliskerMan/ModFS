@@ -21,15 +21,16 @@ section() { printf '\n== %s\n' "$*"; }
 
 # Prints "minos" (minimum macOS) recorded in a Mach-O binary.
 macho_minos() {
-    otool -l "$1" 2>/dev/null | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}'
+    local binary="$1"
+    otool -l "$binary" 2>/dev/null | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}'
 }
 
 # shellcheck source=scripts/macos/env.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
 
 section "Host"
-[ "$(uname -s)" = "Darwin" ] && ok "macOS $(sw_vers -productVersion) ($(sw_vers -buildVersion))" || fail "not macOS (M-BuildHost: build on the MacBook)"
-[ "$(uname -m)" = "arm64" ] && ok "Apple Silicon (arm64)" || fail "not arm64: $(uname -m)"
+if [[ "$(uname -s)" = "Darwin" ]]; then ok "macOS $(sw_vers -productVersion) ($(sw_vers -buildVersion))"; else fail "not macOS (M-BuildHost: build on the MacBook)"; fi
+if [[ "$(uname -m)" = "arm64" ]]; then ok "Apple Silicon (arm64)"; else fail "not arm64: $(uname -m)"; fi
 xcodebuild -version 2>/dev/null | head -1 | sed 's/^/  [ok]   /' || fail "Xcode not found"
 
 section "Tools"
@@ -40,7 +41,7 @@ command -v flutter >/dev/null 2>&1 && flutter --version 2>/dev/null | head -1 | 
 
 section "Homebrew libraries the search core links"
 BREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
-[ -n "$BREW_PREFIX" ] && ok "Homebrew at $BREW_PREFIX" || fail "Homebrew not found"
+if [[ -n "$BREW_PREFIX" ]]; then ok "Homebrew at $BREW_PREFIX"; else fail "Homebrew not found"; fi
 for formula in glib pcre2 icu4c; do
     if brew list --versions "$formula" >/dev/null 2>&1; then
         ok "$(brew list --versions "$formula")"
@@ -63,10 +64,10 @@ for lib in "$BREW_PREFIX"/opt/glib/lib/libglib-2.0.0.dylib \
            "$BREW_PREFIX"/opt/pcre2/lib/libpcre2-8.0.dylib \
            "$BREW_PREFIX"/opt/icu4c/lib/libicuuc.dylib \
            "$BREW_PREFIX"/opt/gettext/lib/libintl.8.dylib; do
-    if [ -e "$lib" ]; then
+    if [[ -e "$lib" ]]; then
         m="$(macho_minos "$lib")"
         printf '         %-60s minos %s\n' "$(basename "$lib")" "$m"
-        if [ "$(printf '%s\n%s\n' "$MAX_MINOS" "$m" | sort -V | tail -1)" = "$m" ]; then MAX_MINOS="$m"; fi
+        if [[ "$(printf '%s\n%s\n' "$MAX_MINOS" "$m" | sort -V | tail -1)" = "$m" ]]; then MAX_MINOS="$m"; fi
     fi
 done
 echo "         (Homebrew builds for macOS $MAX_MINOS; the release instead builds these libraries"
@@ -99,11 +100,11 @@ case "$status" in
     *'"status":"UP"'*) ok "SonarQube up at $SONAR_URL" ;;
     *) fail "SonarQube not reachable/UP at $SONAR_URL (got: ${status:-nothing})" ;;
 esac
-[ -n "${SONAR_TOKEN:-}" ] && ok "SONAR_TOKEN is set" || fail "SONAR_TOKEN is not set in this shell"
+if [[ -n "${SONAR_TOKEN:-}" ]]; then ok "SONAR_TOKEN is set"; else fail "SONAR_TOKEN is not set in this shell"; fi
 
 section "ShadowAgent Knowledge Base (past errors)"
 KB="$(find "$HOME/Library/Containers" -name collabsync.db -path '*shadow*' 2>/dev/null | head -1)"
-if [ -n "$KB" ] && command -v sqlite3 >/dev/null 2>&1; then
+if [[ -n "$KB" ]] && command -v sqlite3 >/dev/null 2>&1; then
     ok "KB: $KB"
     sqlite3 "$KB" "SELECT id, created_at, error_message FROM errors
                    WHERE lower(error_message || context || solution) GLOB '*modfs*'
@@ -119,5 +120,5 @@ else
 fi
 
 section "Result"
-if [ "$FAILURES" -eq 0 ]; then echo "  Ready to build."; else echo "  $FAILURES problem(s) above must be fixed before building."; fi
+if [[ "$FAILURES" -eq 0 ]]; then echo "  Ready to build."; else echo "  $FAILURES problem(s) above must be fixed before building."; fi
 exit "$FAILURES"

@@ -67,13 +67,13 @@ fetch() {
     local url="$1" sha256="$2" file
     file="$DOWNLOADS/$(basename "$url")"
     mkdir -p "$DOWNLOADS"
-    if [ ! -f "$file" ]; then
+    if [[ ! -f "$file" ]]; then
         curl --fail --location --proto '=https' --tlsv1.2 --retry 3 -o "$file.part" "$url"
         mv "$file.part" "$file"
     fi
     local actual
     actual="$(shasum -a 256 "$file" | awk '{print $1}')"
-    if [ "$actual" != "$sha256" ]; then
+    if [[ "$actual" != "$sha256" ]]; then
         rm -f "$file"
         die "checksum mismatch for $(basename "$url"): expected $sha256, got $actual (file deleted)"
     fi
@@ -95,10 +95,10 @@ copy_licenses() {
     mkdir -p "$LICENSES/$name"
     find "$dir" -maxdepth 2 -type f \( -iname 'COPYING*' -o -iname 'LICEN[CS]E*' -o -iname 'NOTICE*' \) \
         -exec cp {} "$LICENSES/$name/" \;
-    [ -n "$(ls -A "$LICENSES/$name")" ] || die "no licence file found for $name in $dir"
+    [[ -n "$(ls -A "$LICENSES/$name")" ]] || die "no licence file found for $name in $dir"
 }
 
-if [ -f "$STAMP" ] && [ "$(cat "$STAMP")" = "$PIN_ID" ]; then
+if [[ -f "$STAMP" ]] && [[ "$(cat "$STAMP")" = "$PIN_ID" ]]; then
     echo "    dependencies already built for macOS $MODFS_MIN_MACOS ($PREFIX)"
     exit 0
 fi
@@ -128,7 +128,7 @@ step "ICU $ICU_VERSION"
 archive="$(fetch "$ICU_URL" "$ICU_SHA256")"
 icu_root="$(extract "$archive" "$SRC_DIR/icu")"
 icu_src="$(dirname "$(find "$icu_root" -maxdepth 3 -name runConfigureICU | head -1)")"
-[ -x "$icu_src/runConfigureICU" ] || die "ICU source layout not recognised"
+[[ -x "$icu_src/runConfigureICU" ]] || die "ICU source layout not recognised"
 (cd "$icu_src" && CFLAGS="$ARCH_FLAGS -O2" CXXFLAGS="$ARCH_FLAGS -O2" \
     ./runConfigureICU MacOSX --prefix="$PREFIX" \
     --enable-static --disable-shared --with-data-packaging=static \
@@ -141,7 +141,7 @@ step "GLib $GLIB_VERSION"
 # formula records the same tarball hash.
 if command -v brew >/dev/null 2>&1; then
     brew_glib="$(brew info --json=v2 glib 2>/dev/null | python3 -c 'import json,sys; f=json.load(sys.stdin)["formulae"][0]; print(f["versions"]["stable"], f["urls"]["stable"]["checksum"])' 2>/dev/null || true)"
-    if [ "${brew_glib%% *}" = "$GLIB_VERSION" ] && [ "${brew_glib##* }" != "$GLIB_SHA256" ]; then
+    if [[ "${brew_glib%% *}" = "$GLIB_VERSION" ]] && [[ "${brew_glib##* }" != "$GLIB_SHA256" ]]; then
         die "GLib $GLIB_VERSION checksum differs from Homebrew's (${brew_glib##* }); not building"
     fi
 fi
@@ -158,10 +158,13 @@ src="$(extract "$archive" "$SRC_DIR/glib")/glib-$GLIB_VERSION"
 copy_licenses "glib-$GLIB_VERSION" "$src"
 # Licences of any fallback subprojects GLib built into itself (e.g. libintl).
 for sub in "$src"/subprojects/*/; do
-    [ -d "$sub" ] || continue
+    [[ -d "$sub" ]] || continue
     name="$(basename "$sub")"
-    case "$name" in packagecache|gvdb) continue ;; esac
-    if [ -n "$(find "$sub" -maxdepth 1 -type f \( -iname 'COPYING*' -o -iname 'LICEN[CS]E*' \) | head -1)" ]; then
+    case "$name" in
+        packagecache|gvdb) continue ;;
+        *) ;;
+    esac
+    if [[ -n "$(find "$sub" -maxdepth 1 -type f \( -iname 'COPYING*' -o -iname 'LICEN[CS]E*' \) | head -1)" ]]; then
         copy_licenses "glib-subproject-$name" "$sub"
     fi
 done

@@ -186,7 +186,9 @@ ModFS_vulnerability_report.txt
 /debian/*.substvars
 
 .DS_Store
-sonar-project.properties
+__pycache__/
+*.pyc
+coverage/
 
 # SonarQube scanner working files
 /.scannerwork/

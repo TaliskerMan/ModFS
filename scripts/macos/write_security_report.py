@@ -12,15 +12,29 @@ Snyk scan that no script ran).
 import argparse
 import hashlib
 import json
+import os
+import re
 import shlex
 import subprocess
 from datetime import date
+
+SAFE_CLI_PATH_RE = re.compile(r"^[A-Za-z0-9_./+-]+$")
+
+
+def safe_path(path):
+    """Resolve `path` and require it to stay inside the current working directory."""
+    resolved = os.path.realpath(path)
+    base_dir = os.path.realpath(os.getcwd())
+    if resolved != base_dir and not resolved.startswith(base_dir + os.sep):
+        raise ValueError(f"path {path!r} is outside the allowed directory")
+    return resolved
 
 
 def read_summary(path):
     """Parse KEY=value lines written by quality_gates.sh (bash %q quoting)."""
     values = {}
-    with open(path, encoding="utf-8") as handle:
+    checked_path = safe_path(path)
+    with open(checked_path, encoding="utf-8") as handle:
         for line in handle:
             key, _, raw = line.rstrip("\n").partition("=")
             parts = shlex.split(raw) if raw else [""]
@@ -28,16 +42,20 @@ def read_summary(path):
     return values
 
 
-def command_output(cmd):
+def command_output(prefix, dmg_path):
     """Return a command's combined output (for signature details)."""
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if not SAFE_CLI_PATH_RE.match(dmg_path) or dmg_path.startswith("-"):
+        raise ValueError(f"unsafe DMG path argument: {dmg_path!r}")
+    checked_dmg = safe_path(dmg_path)
+    result = subprocess.run([*prefix, checked_dmg], capture_output=True, text=True, check=False)
     return (result.stdout + result.stderr).strip()
 
 
 def sha512(path):
     """SHA-512 of a file."""
     digest = hashlib.sha512()
-    with open(path, "rb") as handle:
+    checked_path = safe_path(path)
+    with open(checked_path, "rb") as handle:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
@@ -55,16 +73,24 @@ def main():
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
-    gates = read_summary(args.gates)
+    gates_path = safe_path(args.gates)
+    bundled_path = safe_path(args.bundled)
+    static_libs_path = safe_path(args.static_libs)
+    dmg_path = safe_path(args.dmg)
+    output_path = safe_path(args.output)
+    if not SAFE_CLI_PATH_RE.match(args.dmg) or args.dmg.startswith("-"):
+        raise ValueError(f"unsafe DMG path argument: {args.dmg!r}")
+
+    gates = read_summary(gates_path)
     if gates.get("GATE_RESULT") != "PASSED":
         raise SystemExit("quality gates did not pass; refusing to write a release report")
-    with open(args.bundled, encoding="utf-8") as handle:
+    with open(bundled_path, encoding="utf-8") as handle:
         bundled = json.load(handle)
-    with open(args.static_libs, encoding="utf-8") as handle:
+    with open(static_libs_path, encoding="utf-8") as handle:
         static_libs = json.load(handle)
-    signature = command_output(["codesign", "-dv", "--verbose=2", args.dmg])
+    signature = command_output(["codesign", "-dv", "--verbose=2"], dmg_path)
     authority = [line for line in signature.splitlines() if line.startswith("Authority=")]
-    stapled = command_output(["xcrun", "stapler", "validate", args.dmg])
+    stapled = command_output(["xcrun", "stapler", "validate"], dmg_path)
 
     lines = [
         f"# ModFS {args.version} — macOS (Apple Silicon) security and quality report",
@@ -110,7 +136,7 @@ def main():
         "- Signed inside-out (libraries, frameworks, app) with the hardened runtime and a secure timestamp.",
         *[f"- {line}" for line in authority],
         f"- Notarization ticket: {stapled.splitlines()[-1] if stapled else 'unknown'}",
-        f"- DMG SHA-512: `{sha512(args.dmg)}`",
+        f"- DMG SHA-512: `{sha512(dmg_path)}`",
         "",
         "## What ModFS does with your data",
         "",
@@ -126,9 +152,9 @@ def main():
         "as `ModFS_<version>_source.tar.gz` and at https://github.com/TaliskerMan/ModFS.",
         "",
     ]
-    with open(args.output, "w", encoding="utf-8") as handle:
+    with open(output_path, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
-    print(f"  wrote {args.output}")
+    print(f"  wrote {output_path}")
 
 
 if __name__ == "__main__":

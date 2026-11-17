@@ -54,10 +54,19 @@ def safe_arg(value):
 
 def checked_file(path):
     """Return the real absolute path of an existing regular file, or raise."""
-    real = os.path.realpath(os.path.abspath(path))
+    real = safe_path(path)
     if not os.path.isfile(real):
         raise RuntimeError(f"not a file: {path!r}")
     return safe_arg(real)
+
+
+def safe_path(path):
+    """Resolve `path` and require it to stay inside the current working directory."""
+    resolved = os.path.realpath(path)
+    base_dir = os.path.realpath(os.getcwd())
+    if resolved != base_dir and not resolved.startswith(base_dir + os.sep):
+        raise ValueError(f"path {path!r} is outside the allowed directory")
+    return resolved
 
 
 def run(cmd):
@@ -92,7 +101,7 @@ def resolve(install_name, referencing_file, original_dir):
     referencing library originally lived in (Homebrew), since the copy in the
     app no longer sits next to its siblings until they are copied too.
     """
-    if install_name.startswith("@loader_path/") or install_name.startswith("@rpath/"):
+    if install_name.startswith(("@loader_path/", "@rpath/")):
         base = original_dir.get(referencing_file, os.path.dirname(referencing_file))
         candidate = os.path.join(base, install_name.split("/", 1)[1])
     else:
@@ -113,14 +122,15 @@ def copy_licenses(real_path, licenses_dir, copied):
     formula, version = formula_of(real_path)
     if not formula or (formula, version) in copied:
         return formula, version
+    safe_licenses_dir = safe_path(licenses_dir)
     keg = real_path.split(f"/Cellar/{formula}/{version}/")[0] + f"/Cellar/{formula}/{version}"
-    target = os.path.join(licenses_dir, f"{formula}-{version}")
+    target = safe_path(os.path.join(safe_licenses_dir, f"{formula}-{version}"))
     os.makedirs(target, exist_ok=True)
     found = 0
     for root, _dirs, files in os.walk(keg):
         for name in files:
             if LICENSE_PATTERN.match(name):
-                shutil.copy2(os.path.join(root, name), os.path.join(target, name))
+                shutil.copy2(os.path.join(root, name), safe_path(os.path.join(target, name)))
                 found += 1
     if found == 0:
         raise RuntimeError(f"no licence file found for {formula} {version} in {keg}")
@@ -130,8 +140,10 @@ def copy_licenses(real_path, licenses_dir, copied):
 
 def bundle(core, dest, licenses_dir):
     """Bundle every non-system dependency of `core` into `dest`."""
-    os.makedirs(dest, exist_ok=True)
-    os.makedirs(licenses_dir, exist_ok=True)
+    safe_dest = safe_path(dest)
+    safe_licenses_dir = safe_path(licenses_dir)
+    os.makedirs(safe_dest, exist_ok=True)
+    os.makedirs(safe_licenses_dir, exist_ok=True)
     original_dir = {}          # copied file -> directory it came from
     bundled = {}               # file name -> manifest entry
     licenses_copied = set()
@@ -147,13 +159,13 @@ def bundle(core, dest, licenses_dir):
                 continue
             real = resolve(install_name, current, original_dir)
             name = os.path.basename(install_name)
-            target = os.path.join(dest, name)
+            target = safe_path(os.path.join(safe_dest, name))
             if name not in bundled:
                 shutil.copy2(real, target)
-                os.chmod(target, 0o755)
+                os.chmod(target, 0o700)
                 original_dir[target] = os.path.dirname(real)
                 run(["install_name_tool", "-id", f"@rpath/{name}", target])
-                formula, version = copy_licenses(real, licenses_dir, licenses_copied)
+                formula, version = copy_licenses(real, safe_licenses_dir, licenses_copied)
                 bundled[name] = {"file": name, "source": real, "formula": formula, "version": version}
                 queue.append(target)
             run(["install_name_tool", "-change", install_name, f"@loader_path/{name}", current])
@@ -168,8 +180,7 @@ def verify(dest):
         if not name.endswith(".dylib"):
             continue
         for install_name in linked_libraries(path):
-            if not (is_system(install_name) or install_name.startswith("@loader_path/")
-                    or install_name.startswith("@rpath/")):
+            if not (is_system(install_name) or install_name.startswith(("@loader_path/", "@rpath/"))):
                 problems.append(f"{name} -> {install_name}")
     if problems:
         raise RuntimeError("references outside the app remain:\n  " + "\n  ".join(problems))
@@ -184,13 +195,15 @@ def main():
     args = parser.parse_args()
     try:
         core = checked_file(args.core)
-        dest = os.path.dirname(core)
-        bundled = bundle(core, dest, args.licenses_dir)
+        dest = safe_path(os.path.dirname(core))
+        licenses_dir = safe_path(args.licenses_dir)
+        manifest_path = safe_path(args.manifest)
+        bundled = bundle(core, dest, licenses_dir)
         verify(dest)
-    except RuntimeError as error:
+    except (RuntimeError, ValueError) as error:
         print(f"bundle_dylibs: {error}", file=sys.stderr)
         return 1
-    with open(args.manifest, "w", encoding="utf-8") as handle:
+    with open(manifest_path, "w", encoding="utf-8") as handle:
         json.dump(sorted(bundled.values(), key=lambda e: e["file"]), handle, indent=2)
     for entry in sorted(bundled.values(), key=lambda e: e["file"]):
         print(f"  bundled {entry['file']}  ({entry['formula']} {entry['version']})")

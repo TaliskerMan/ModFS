@@ -73,13 +73,14 @@ project_deployment_target() {
     local targets
     targets="$(grep -Eo 'MACOSX_DEPLOYMENT_TARGET = [0-9.]+' macos/Runner.xcodeproj/project.pbxproj \
         | awk '{print $3}' | sort -u)"
-    [ "$(echo "$targets" | wc -l | tr -d ' ')" = "1" ] || die "MACOSX_DEPLOYMENT_TARGET differs between configurations: $targets"
+    [[ "$(echo "$targets" | wc -l | tr -d ' ')" = "1" ]] || die "MACOSX_DEPLOYMENT_TARGET differs between configurations: $targets"
     echo "$targets"
 }
 
 # Prints the minimum macOS a Mach-O file was built for.
 macho_minos() {
-    otool -l "$1" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}'
+    local binary="$1"
+    otool -l "$binary" | awk '/LC_BUILD_VERSION/{f=1} f&&/minos/{print $2; exit}'
 }
 
 # Lists every Mach-O file inside the app (executables, dylibs, framework binaries).
@@ -109,7 +110,7 @@ resolve_signing_identity() {
         return
     fi
     hashes="$(security find-identity -v -p codesigning | awk -v n="\"$name\"" 'index($0, n) {print $2}')"
-    [ -n "$hashes" ] || die "no valid signing identity named \"$name\" (security find-identity -v -p codesigning)"
+    [[ -n "$hashes" ]] || die "no valid signing identity named \"$name\" (security find-identity -v -p codesigning)"
     for hash in $hashes; do
         end="$(security find-certificate -a -Z -p -c "$name" | awk -v h="$hash" '
             /^SHA-1 hash:/ { take = ($3 == h) }
@@ -119,7 +120,7 @@ resolve_signing_identity() {
             | openssl x509 -noout -enddate | cut -d= -f2 \
             | python3 -I -c 'import sys, datetime; print(datetime.datetime.strptime(sys.stdin.read().strip(), "%b %d %H:%M:%S %Y %Z").strftime("%Y%m%d%H%M%S"))')" \
             || die "could not read the expiry date of signing certificate $hash"
-        if [ -z "$best" ] || [[ "$end" > "$best_end" ]]; then
+        if [[ -z "$best" ]] || [[ "$end" > "$best_end" ]]; then
             best="$hash"
             best_end="$end"
         fi
@@ -132,11 +133,11 @@ resolve_signing_identity() {
 fix_flat_framework() {
     local framework="$1" binary_name
     binary_name="$(basename "$framework" .framework)"
-    if [ -f "$framework/$binary_name" ] && [ ! -L "$framework/$binary_name" ]; then
+    if [[ -f "$framework/$binary_name" ]] && [[ ! -L "$framework/$binary_name" ]]; then
         echo "    restructuring $binary_name.framework"
         mkdir -p "$framework/Versions/A"
         mv "$framework/$binary_name" "$framework/Versions/A/"
-        if [ -d "$framework/Resources" ] && [ ! -L "$framework/Resources" ]; then
+        if [[ -d "$framework/Resources" ]] && [[ ! -L "$framework/Resources" ]]; then
             mv "$framework/Resources" "$framework/Versions/A/"
         fi
         ln -sfn A "$framework/Versions/Current"
@@ -147,13 +148,13 @@ fix_flat_framework() {
 
 # ---------------------------------------------------------------------------
 step "1. Host checks"
-[ "$(uname -s)" = "Darwin" ] || die "macOS builds must run on the MacBook (M-BuildHost)"
-[ "$(uname -m)" = "$MODFS_ARCH" ] || die "this release is Apple Silicon only; host is $(uname -m)"
+[[ "$(uname -s)" = "Darwin" ]] || die "macOS builds must run on the MacBook (M-BuildHost)"
+[[ "$(uname -m)" = "$MODFS_ARCH" ]] || die "this release is Apple Silicon only; host is $(uname -m)"
 for tool in flutter meson ninja python3 create-dmg syft snyk sonar-scanner xcrun codesign; do
     command -v "$tool" >/dev/null 2>&1 || die "$tool is not installed (run scripts/macos/preflight.sh)"
 done
 DEPLOYMENT_TARGET="$(project_deployment_target)"
-[ "$DEPLOYMENT_TARGET" = "$MODFS_MIN_MACOS" ] \
+[[ "$DEPLOYMENT_TARGET" = "$MODFS_MIN_MACOS" ]] \
     || die "Xcode deployment target $DEPLOYMENT_TARGET differs from MODFS_MIN_MACOS $MODFS_MIN_MACOS (scripts/macos/env.sh)"
 grep -q "platform :osx, '$MODFS_MIN_MACOS'" macos/Podfile || die "macos/Podfile platform differs from $MODFS_MIN_MACOS"
 echo "    macOS $(sw_vers -productVersion); app supports macOS $DEPLOYMENT_TARGET or later"
@@ -199,9 +200,9 @@ env -u PKG_CONFIG_PATH -u CPATH -u LIBRARY_PATH \
         -Dc_args="['$MIN_FLAG']" -Dc_link_args="['$MIN_FLAG','-lc++']"
 MACOSX_DEPLOYMENT_TARGET="$DEPLOYMENT_TARGET" meson compile -C "$CORE_BUILD_DIR" modfs_core
 CORE_DYLIB="$CORE_BUILD_DIR/src/libmodfs_core.dylib"
-[ -f "$CORE_DYLIB" ] || die "core library was not built"
+[[ -f "$CORE_DYLIB" ]] || die "core library was not built"
 # Fail here, not after the Flutter build, if the core needs a newer macOS.
-[ "$(macho_minos "$CORE_DYLIB")" = "$DEPLOYMENT_TARGET" ] \
+[[ "$(macho_minos "$CORE_DYLIB")" = "$DEPLOYMENT_TARGET" ]] \
     || die "core library needs macOS $(macho_minos "$CORE_DYLIB"), expected $DEPLOYMENT_TARGET"
 # The development copy in src/ is what `flutter run` loads; keep it current.
 cp "$CORE_DYLIB" src/libmodfs_core.dylib
@@ -212,7 +213,7 @@ step "5. Flutter app"
 flutter clean
 flutter pub get
 flutter build macos --release --build-name="$base_version" --build-number="$((build_number + 1))"
-[ -d "$BUILT_APP" ] || die "flutter did not produce $BUILT_APP"
+[[ -d "$BUILT_APP" ]] || die "flutter did not produce $BUILT_APP"
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR"
 # Shipped as ModFS.app (the Xcode product, and so the executable, is "modfs").
@@ -241,7 +242,7 @@ step "7. Apple Silicon only, minimum macOS, signing"
 # Remove any Intel slices so the app can't start (and crash) on Intel Macs.
 while IFS= read -r macho; do
     archs="$(lipo -archs "$macho" 2>/dev/null || true)"
-    if [ "$archs" != "$MODFS_ARCH" ] && echo "$archs" | grep -qw "$MODFS_ARCH"; then
+    if [[ "$archs" != "$MODFS_ARCH" ]] && echo "$archs" | grep -qw "$MODFS_ARCH"; then
         lipo "$macho" -thin "$MODFS_ARCH" -output "$macho.thin" && mv "$macho.thin" "$macho"
     elif ! echo "$archs" | grep -qw "$MODFS_ARCH"; then
         die "$macho has no $MODFS_ARCH code (archs: ${archs:-none})"
@@ -251,7 +252,7 @@ done < <(app_macho_files)
 # Every bundled library must run on the macOS version the app says it supports.
 while IFS= read -r macho; do
     minos="$(macho_minos "$macho")"
-    if [ -n "$minos" ] && [ "$(printf '%s\n%s\n' "$DEPLOYMENT_TARGET" "$minos" | sort -V | tail -1)" != "$DEPLOYMENT_TARGET" ]; then
+    if [[ -n "$minos" ]] && [[ "$(printf '%s\n%s\n' "$DEPLOYMENT_TARGET" "$minos" | sort -V | tail -1)" != "$DEPLOYMENT_TARGET" ]]; then
         die "$(basename "$macho") needs macOS $minos but the app declares $DEPLOYMENT_TARGET; raise MACOSX_DEPLOYMENT_TARGET"
     fi
 done < <(app_macho_files)
@@ -294,7 +295,7 @@ create-dmg \
     --hide-extension "$APP_DISPLAY_NAME.app" \
     --icon "Applications" 450 185 \
     "$DMG_PATH" "$STAGING_DIR/"
-[ -f "$DMG_PATH" ] || die "create-dmg did not produce $DMG_PATH"
+[[ -f "$DMG_PATH" ]] || die "create-dmg did not produce $DMG_PATH"
 sign "$DMG_PATH"
 xcrun notarytool submit "$DMG_PATH" --keychain-profile "$MODFS_NOTARY_PROFILE" --wait \
     | tee "$WORK_DIR/notarization.log"
@@ -308,8 +309,8 @@ spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG
 MOUNT_POINT="$(mktemp -d)"
 hdiutil attach "$DMG_PATH" -nobrowse -readonly -mountpoint "$MOUNT_POINT" > /dev/null
 trap 'hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true' EXIT
-[ -d "$MOUNT_POINT/$APP_DISPLAY_NAME.app" ] || die "DMG has no $APP_DISPLAY_NAME.app"
-[ -L "$MOUNT_POINT/Applications" ] || die "DMG has no Applications shortcut"
+[[ -d "$MOUNT_POINT/$APP_DISPLAY_NAME.app" ]] || die "DMG has no $APP_DISPLAY_NAME.app"
+[[ -L "$MOUNT_POINT/Applications" ]] || die "DMG has no Applications shortcut"
 spctl --assess --type execute --verbose=2 "$MOUNT_POINT/$APP_DISPLAY_NAME.app"
 hdiutil detach "$MOUNT_POINT" -quiet
 trap - EXIT
@@ -345,17 +346,17 @@ python3 scripts/macos/write_security_report.py \
     --gates Audit/quality_gates/summary.env \
     --bundled "$WORK_DIR/bundled_libraries.json" \
     --static-libs "$DEPS_ROOT/manifest.json" \
-    --dmg "$DROP_DIR/$DMG_NAME" \
+    --dmg "$DMG_PATH" \
     --deployment-target "$DEPLOYMENT_TARGET" \
-    --output "$DROP_DIR/security_report.md"
-cp "$DROP_DIR/security_report.md" Audit/security_report_macos.md
+    --output Audit/security_report_macos.md
+cp Audit/security_report_macos.md "$DROP_DIR/security_report.md"
 # Release notes: this version's CHANGELOG section.
 awk -v v="$base_version" '
     $0 ~ "^## \\[" v "\\]" {on=1; print; next}
     on && /^## \[/ {exit}
     on {print}
 ' CHANGELOG.md > "$DROP_DIR/RELEASE_NOTES.md"
-[ -s "$DROP_DIR/RELEASE_NOTES.md" ] || die "CHANGELOG.md has no section for $base_version"
+[[ -s "$DROP_DIR/RELEASE_NOTES.md" ]] || die "CHANGELOG.md has no section for $base_version"
 
 echo
 echo "Release $new_version is ready in $DROP_DIR:"

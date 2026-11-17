@@ -13,7 +13,7 @@ flutter create --platforms macos .
 echo "==> 3. Compiling ModFS C backend with Meson..."
 cd src
 # Initialize meson build directory (or wipe and reset if it exists to be safe)
-if [ ! -d "build" ]; then
+if [[ ! -d "build" ]]; then
     meson setup build
 else
     meson configure build
