@@ -40,7 +40,7 @@ def test_safe_path_rejects_symlink_escape():
 
 def test_end_to_end_report_generation():
     """Verify main() writes a complete security report from validated build files."""
-    with tempfile.TemporaryDirectory() as tmp_dir:
+    with tempfile.TemporaryDirectory(prefix="security report ") as tmp_dir:
         gates_file = os.path.join(tmp_dir, "summary.env")
         bundled_file = os.path.join(tmp_dir, "bundled.json")
         static_file = os.path.join(tmp_dir, "static.json")
@@ -78,6 +78,7 @@ def test_end_to_end_report_generation():
         ]
         with (
             mock.patch.object(sys, "argv", argv),
+            mock.patch.object(wsr, "_allowed_roots", return_value=(os.path.realpath(tmp_dir),)),
             mock.patch.object(wsr, "command_output", return_value="Authority=Developer ID\nThe validate action worked!"),
         ):
             wsr.main()

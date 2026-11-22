@@ -16,30 +16,27 @@ import os
 import re
 import shlex
 import subprocess
-import tempfile
 from datetime import date
 
 SAFE_CLI_PATH_RE = re.compile(r"^[A-Za-z0-9_./+-]+$")
-# 2026-11-21 (MOD-13, CWE-23): Anchor allowed build paths to static canonical
-# roots (repository root and system temporary directory for isolated tests)
-# rather than dynamic os.getcwd(), and enforce os.path.commonpath containment
-# before every file open so CLI arguments cannot traverse outside build roots.
+# 2026-11-21 (MOD-13, CWE-23): Anchor allowed build paths to the canonical
+# repository root rather than dynamic os.getcwd(), and enforce os.path.commonpath
+# containment before every file open so CLI arguments cannot traverse outside it.
 REPO_ROOT = os.path.realpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 )
-TEMP_ROOT = os.path.realpath(tempfile.gettempdir())
 
 
 def _allowed_roots():
     """Return canonical root directories permitted for release-report inputs and outputs."""
-    return (REPO_ROOT, TEMP_ROOT)
+    return (REPO_ROOT,)
 
 
 def safe_path(path, allowed_roots=None):
     """Validate and resolve `path`, requiring canonical containment under an allowed root."""
     if not isinstance(path, str) or not path or "\x00" in path:
         raise ValueError(f"invalid path argument: {path!r}")
-    if path.startswith("-") or not SAFE_CLI_PATH_RE.match(path):
+    if path.startswith("-"):
         raise ValueError(f"unsafe CLI path argument: {path!r}")
     normalized_parts = path.replace("\\", "/").split("/")
     if ".." in normalized_parts:
@@ -49,10 +46,10 @@ def safe_path(path, allowed_roots=None):
     resolved = os.path.realpath(candidate)
     roots = tuple(os.path.realpath(root) for root in (allowed_roots or _allowed_roots()))
     for root in roots:
-        if (
-            os.path.commonpath([root, resolved]) == root
-            and resolved.startswith(root + os.sep)
-        ):
+        if os.path.commonpath([root, resolved]) == root and resolved.startswith(root + os.sep):
+            rel = os.path.relpath(resolved, root)
+            if not SAFE_CLI_PATH_RE.match(rel):
+                raise ValueError(f"unsafe CLI path argument: {path!r}")
             return resolved
     raise ValueError(f"path {path!r} is outside the allowed directories")
 
