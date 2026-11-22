@@ -1,6 +1,11 @@
 # Plan for ModFS
 - Untrack sonar-project.properties from GitHub and add to .gitignore
 
+## 2026-11-21 — MOD-13 Snyk Code Path Traversal Remediation (v1.0.4+40)
+- [x] Anchor `safe_path()` in `scripts/macos/write_security_report.py` to static canonical roots (`REPO_ROOT`, `TEMP_ROOT`) with `..` rejection and `os.path.commonpath` containment
+- [x] Route `--bundled`, `--static-libs`, `--gates`, `--dmg`, and `--output` file operations through validated helpers (`read_json_manifest`, `read_summary`, `sha512`, `write_report`)
+- [x] Add `test/test_write_security_report.py` unit tests and verify `0` Snyk Code findings (`snyk code test`)
+
 ## 2026-10-16 — macOS release 1.0.4 (Apple Silicon, macOS 14+)
 Decisions (Chuck): macOS only; no sort UI (claim removed); keep the 200/500
 result cap and say so; search-syntax help button; GPLv3-or-later; build the C

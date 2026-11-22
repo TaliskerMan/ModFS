@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.4+40] - 2026-11-21
+### Security
+- Remediated **MOD-13** Snyk Code Path Traversal (`python/PT`, `CWE-23`) findings in `scripts/macos/write_security_report.py` by anchoring allowed build roots to canonical `REPO_ROOT` / `TEMP_ROOT`, rejecting `..` traversal segments and unsafe CLI characters on all path inputs, and enforcing `os.path.commonpath` containment inside `read_json_manifest()`, `read_summary()`, `sha512()`, and `write_report()`.
+- Added Python unit test suite (`test/test_write_security_report.py`) covering canonical path validation, symlink escape rejection, and end-to-end report generation.
+
 ## [1.0.4+39] - 2026-11-16
 ### Security & Quality
 - Remediated all SonarQube Cloud vulnerabilities and code smells across Python release scripts (`bundle_dylibs.py`, `write_security_report.py`, `smoke_test_core.py`), Bash build scripts (`build_macos.sh`, `build_deps.sh`, `preflight.sh`, `quality_gates.sh`, `macos_setup.sh`), Swift macOS runner (`AppDelegate.swift`), and C FFI bridge (`modfs_ffi.c` / `modfs_ffi.h`).

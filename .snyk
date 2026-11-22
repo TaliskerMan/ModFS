@@ -12,4 +12,5 @@ exclude:
     - build-native/**
     - .dart_tool/**
     - Audit/**
+    - deb_dist/**
     - test/**
